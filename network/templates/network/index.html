@@ -2,4 +2,28 @@
 
 {% block body %}
     TODO
+
+    <form class="newPost" method="POST">
+    	<h1 class="newPost__heading">Write something...</h1>
+    	<textarea class="newPost__input" placeholder="What is happening..."></textarea>
+    	<button class="btn btn-primary newPost__submit">Post</button>
+    </form>
+
+
+    <div class="post">
+    	<div class="post__header">
+    		<p>Name</p>
+    		<p>Edit</p>
+    	</div>
+    	<p class="post__date">Date</p>
+    	<p class="post__content">Content</p>
+    	<div class="post__footer">
+    		<p>Number Likes</p>
+    		<p>Like<p>
+    	</div>
+    </div>
+
+
+
+
 {% endblock %}

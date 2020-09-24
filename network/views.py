@@ -61,3 +61,38 @@ def register(request):
         return HttpResponseRedirect(reverse("index"))
     else:
         return render(request, "network/register.html")
+
+def post(request):
+    pass
+
+def posts(request):
+    pass
+
+def posts_followers(request):
+    pass
+
+def profile(request, user_id):
+    pass
+
+def like(request, post_id):
+    pass
+
+def edit(request, post_id):
+    pass
+
+def follow(request, user_id):
+    pass
+
+
+# API CALLS:
+# GET posts, GET posts/userID, GET posts/following
+# POST post
+# Edit a post
+# Like a post
+# Follow a user
+# GET user - get user details and get posts
+
+
+
+
+
