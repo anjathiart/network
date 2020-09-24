@@ -5,7 +5,7 @@ from django.db import models
 class User(AbstractUser):
 	followers = models.ManyToManyField('self', related_name="users_follow")
 
-class Posts(models.Model):
+class Post(models.Model):
 	user = models.ForeignKey("User", on_delete=models.CASCADE, related_name="posts")
 	body = models.TextField(blank=True)
 	created_at = models.DateTimeField(auto_now_add=True)

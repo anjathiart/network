@@ -22,7 +22,7 @@ A Twitter-like social network website for making posts and following users.
 `python3 manage.py migrate`
 `python3 manage.py runserver`
 
-And in `...static/network`:
+And in `network/static/network`:
 `sass --watch styles.sass styles.css`
 
 ## Tests

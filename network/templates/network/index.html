@@ -1,4 +1,5 @@
 {% extends "network/layout.html" %}
+{% load static %}
 
 {% block body %}
     TODO
@@ -23,7 +24,11 @@
     	</div>
     </div>
 
+    <h3>Test div</h3>
+    <div id="test"></div>
 
+{% endblock %}
 
-
+{% block script %}
+    <script src="{% static 'network/network.jsx' %}" type="text/jsx"></script>
 {% endblock %}

@@ -11,14 +11,31 @@ if( document.readyState !== 'loading' ) {
 function myInitCode() {
 	
 	// Use buttons to toggle between views
-	document.querySelector('#inbox').addEventListener('click', () => load_mailbox('inbox'));
+	/*document.querySelector('#main').addEventListener('click', () => load_mailbox('inbox'));
 	document.querySelector('#sent').addEventListener('click', () => load_mailbox('sent'));
 	document.querySelector('#archived').addEventListener('click', () => load_mailbox('archive'));
 	document.querySelector('#compose').addEventListener('click', () => compose_email());
-	document.querySelector('#sendMail').addEventListener('click', send_email);
+	document.querySelector('#sendMail').addEventListener('click', send_email);*/
 
-	// By default, load the inbox
-	load_mailbox('inbox');
+	// By default, load all existing posts
+	load_posts('all');
+}
+
+// Load posts based on some context, where the default context is all posts
+// ... other options are to load posts of a specific user or all posts for users that the 
+// ... authenticated user is following
+function load_posts(context) {
+	console.log('loading')
+	fetch(`/posts/${context}`)
+		.then(response => response.json())
+		.then(posts => {
+
+		// Print posts
+		console.log(posts);
+		document.querySelector('#test').innerHTML = posts[0].body
+		// ... do something else with emails ...
+		// renderEmailsView(emails)
+	});
 }
 
 function compose_email(sentEmail) {
