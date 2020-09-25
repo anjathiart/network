@@ -15,6 +15,9 @@ from .models import User, Post
 def index(request):
 	return render(request, "network/index.html")
 
+def userId(request):
+	return JsonResponse({ "id": request.user.id }, safe=False)
+
 def post(request):
 	pass
 

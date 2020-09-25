@@ -22,8 +22,9 @@ class Post(models.Model):
 	def serialize(self):
 		return {
 			"id": self.id,
+			"name": self.user.username,
 			"body": self.body,
 			"created": self.created_at.strftime("%b %-d %Y, %-I:%M %p"),
 			"modified": self.modified_at.strftime("%b %-d %Y, %-I:%M %p"),
-			"likes": self.likes.count(),
+			"likes": [user.id for user in self.likes.all()],
 		}

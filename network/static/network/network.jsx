@@ -8,6 +8,10 @@ if( document.readyState !== 'loading' ) {
     });
 }
 
+let user = null;
+
+
+
 function myInitCode() {
 	
 	// Use buttons to toggle between views
@@ -18,7 +22,84 @@ function myInitCode() {
 	document.querySelector('#sendMail').addEventListener('click', send_email);*/
 
 	// By default, load all existing posts
+
+	fetch(`/user/current`)
+		.then(response => response.json())
+		.then(result => {
+			console.log(result);
+			user = result.id
+	});
+
 	load_posts('all');
+}
+
+function renderPosts(posts) {
+	console.log(user);
+	class Post extends React.Component {
+		constructor(props) {
+			super(props);
+			this.state = {
+				"post_id": props.index,
+				"liked": props.likes.indexOf(parseInt(user, 10)) >= 0,
+			};
+		}
+		render() {
+			return (
+        		<div id={ "post" + this.props.index }>
+					<div className="post__header">
+						<p>{ this.props.name }</p>
+						<button>Edit</button>
+					</div>
+					<p className="post__date">{ this.props.date }</p>
+					<p className="post__content">{ this.props.body }</p>
+					<div className="post__footer">
+						<p>Number Likes: { this.props.likes.length }</p>
+						{ this.state.liked
+							? <button onClick={this.actionLike}>Unlike</button>
+							: <button onClick={this.actionLike}>Like</button>
+						}
+
+					</div>
+				</div>
+			);
+		}
+
+		actionLike = (value) => {
+			this.setState(state => ({
+				"liked": !state.liked
+			}));
+		}
+
+		actionEdit = () => {
+			alert('edit')
+		}
+
+	}
+
+	// Build the list of posts card components for the mailbox content
+	let list = [];
+	for (let i = 0; i < posts.length; i += 1) {
+		list.push(<Post name={posts[i].name} date={posts[i].modified}  index={posts[i].id} likes={ posts[i].likes } body={posts[i].body} key={posts[i].id}/>)
+	}
+
+	class Posts extends React.Component {
+		render() {
+			return (
+				<div>{ list }</div>
+			);
+		}
+	}
+
+	ReactDOM.render(<Posts />, document.querySelector("#posts__component"));
+
+	// Open an email when the email card object is clicked on
+	// TODO: this should be a method of the EmailCard class
+	// document.querySelectorAll('.emailCard').forEach(el => {
+	// 	el.addEventListener('click', (event) => {
+	// 		let emailIndex = el.id.replace('email', '')
+	// 		view_email(emails[emailIndex])
+	// 	})
+	// })
 }
 
 // Load posts based on some context, where the default context is all posts
@@ -33,8 +114,8 @@ function load_posts(context) {
 		// Print posts
 		console.log(posts);
 		document.querySelector('#test').innerHTML = posts[0].body
-		// ... do something else with emails ...
-		// renderEmailsView(emails)
+		// ... do something else with posts ...
+		renderPosts(posts)
 	});
 }
 
