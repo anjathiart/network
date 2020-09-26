@@ -54,24 +54,83 @@ function renderPosts(posts) {
 					<p className="post__content">{ this.props.body }</p>
 					<div className="post__footer">
 						<p>Number Likes: { this.props.likes.length }</p>
-						{ this.state.liked
-							? <button onClick={this.actionLike}>Unlike</button>
-							: <button onClick={this.actionLike}>Like</button>
-						}
-
+						<button onClick={ this.actionLike.bind(this, this.props.index) }>{ this.state.liked ? 'Unlike' : 'Like' }</button>
 					</div>
 				</div>
 			);
 		}
 
-		actionLike = (value) => {
+		actionLike = (post_id) => {
+			let newValue = !this.state.liked;
+
 			this.setState(state => ({
-				"liked": !state.liked
+				"liked": newValue
 			}));
+
+			this.updatePost(post_id, {
+				liked: newValue
+			});
+			console.log('z')
 		}
 
 		actionEdit = () => {
 			alert('edit')
+		}
+
+		updatePost = (post_id, fields) => {
+
+			var csrftoken = Cookies.get('csrftoken');
+
+
+			console.log('x');
+			fetch(`posts/${post_id}/update`, {
+				method: 'PUT',
+				body: JSON.stringify(fields),
+				headers: { "X-CSRFToken": csrftoken },
+				credentials: 'same-origin',
+
+			}).then(response => {
+				console.log(response)
+				// intercept response
+				return response.status;
+			})
+
+	// 		fetch('/emails', {
+	// 	method: 'POST',
+	// 	body: JSON.stringify({
+	// 		recipients,
+	// 		subject,
+	// 		body,
+	// 	})
+	// })
+	// .then(response => {
+	// 	// intercept response
+	// 	return response.status;
+	// })
+	// .then(result => {
+
+	// 	// Print result
+	//     console.log(result);
+
+	//     // Show and animate email sent status message
+	// 	if (result === 200 || result === 201) {
+	// 		messageSuccess.style.display = 'block';
+	// 		messageSuccess.classList.add('animateMessage');
+	// 		setTimeout(function() {
+	// 	    	// Email is sent succuessfullly so show the 'sent' mailbox
+	// 	    	load_mailbox('sent');
+	//     	}, 2000);
+	// 	} else if (result === 400) {
+	// 		// Error sending email so show 
+	// 		messageError.style.display = 'block';
+	// 		messageError.classList.add('animateMessage');
+	// 	}
+	// })
+	// .catch((error) => {
+	// 	console.error('Error', error);
+	// });
+
+
 		}
 
 	}

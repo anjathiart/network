@@ -42,11 +42,38 @@ def posts_followers(request):
 def profile(request, user_id):
 	pass
 
-def like(request, post_id):
-	pass
+def update(request, post_id):
 
-def edit(request, post_id):
-	pass
+	# Query for post
+	try:
+		post = Post.objects.get(id=post_id)
+	except Post.DoesNotExist:
+		return JsonResponse({"error": "Post not found."}, status=404)
+
+
+	# Check recipient emails
+	data = json.loads(request.body)
+	print(data)
+
+	# valid body parameters: liked | content
+	# Update whether email is read or should be archived
+	# if request.method == "PUT":
+	# 	data = json.loads(request.body)
+	# 	if data.get("liked") is not None:
+	# 		post.read = data["read"]
+	# 	if data.get("archived") is not None:
+	# 		email.archived = data["archived"]
+	# 	email.save()
+	# 	return HttpResponse(status=204)
+
+	if data['liked'] == True:
+		print('like post')
+	elif data['liked'] == False:
+		print('unlike post')
+
+
+	return JsonResponse({"error": "TODO"}, status=400)
+
 
 def follow(request, user_id):
 	pass
