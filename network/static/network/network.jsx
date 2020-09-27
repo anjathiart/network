@@ -1,3 +1,9 @@
+let currentUserId = null;
+
+// all posts (all) | posts of those the user follows (follows) | posts of a particular user (user)
+let postDisplayContext = 'all';
+
+
 if( document.readyState !== 'loading' ) {
     console.log( 'document is already ready, just execute code here' );
     myInitCode();
@@ -8,12 +14,11 @@ if( document.readyState !== 'loading' ) {
     });
 }
 
-let user = null;
-
-
 
 function myInitCode() {
 	
+
+
 	// Use buttons to toggle between views
 	/*document.querySelector('#main').addEventListener('click', () => load_mailbox('inbox'));
 	document.querySelector('#sent').addEventListener('click', () => load_mailbox('sent'));
@@ -21,56 +26,57 @@ function myInitCode() {
 	document.querySelector('#compose').addEventListener('click', () => compose_email());
 	document.querySelector('#sendMail').addEventListener('click', send_email);*/
 
-	// By default, load all existing posts
-
+	// Initialise global variables
+	postDisplayContext = 'all';
 	fetch(`/user/current`)
 		.then(response => response.json())
 		.then(result => {
-			console.log(result);
-			user = result.id
+			currentUserId = result.id
 	});
 
-	load_posts('all');
+	load_posts();
 }
 
 function renderPosts(posts) {
-	console.log(user);
+
 	class Post extends React.Component {
 		constructor(props) {
 			super(props);
 			this.state = {
 				"post_id": props.index,
-				"liked": props.likes.indexOf(parseInt(user, 10)) >= 0,
+				"liked": props.likes.indexOf(parseInt(currentUserId, 10)) >= 0,
 			};
 		}
 		render() {
 			return (
-        		<div id={ "post" + this.props.index }>
+        		<div id={ "post" + this.props.id }>
 					<div className="post__header">
-						<p>{ this.props.name }</p>
+						<p onClick={ this.actionUser.bind(this, this.props.index) }>{ this.props.name }</p>
 						<button>Edit</button>
 					</div>
 					<p className="post__date">{ this.props.date }</p>
 					<p className="post__content">{ this.props.body }</p>
 					<div className="post__footer">
 						<p>Number Likes: { this.props.likes.length }</p>
-						<button onClick={ this.actionLike.bind(this, this.props.index) }>{ this.state.liked ? 'Unlike' : 'Like' }</button>
+						<button onClick={ this.actionLike.bind(this, this.props.id) }>{ this.state.liked ? 'Unlike' : 'Like' }</button>
 					</div>
 				</div>
 			);
 		}
 
 		actionLike = (post_id) => {
-			let newValue = !this.state.liked;
-
-			this.setState(state => ({
-				"liked": newValue
-			}));
-
+			console.log(post_id);
 			this.updatePost(post_id, {
-				liked: newValue
+				liked: !this.state.liked
 			});
-			console.log('z')
+		}
+
+		actionUser = (post_index) => {
+			console.log(post_index)
+			let index = parseInt(post_index, 10);
+			let user_id = posts[post_index].userId;
+			load_profile(user_id);
+
 		}
 
 		actionEdit = () => {
@@ -79,10 +85,8 @@ function renderPosts(posts) {
 
 		updatePost = (post_id, fields) => {
 
-			var csrftoken = Cookies.get('csrftoken');
+			let csrftoken = Cookies.get('csrftoken');
 
-
-			console.log('x');
 			fetch(`posts/${post_id}/update`, {
 				method: 'PUT',
 				body: JSON.stringify(fields),
@@ -90,10 +94,10 @@ function renderPosts(posts) {
 				credentials: 'same-origin',
 
 			}).then(response => {
-				console.log(response)
-				// intercept response
-				return response.status;
-			})
+				if (response.status.toString().charAt(0) === '2') {
+	 				load_posts();
+				}
+			});
 
 	// 		fetch('/emails', {
 	// 	method: 'POST',
@@ -138,7 +142,7 @@ function renderPosts(posts) {
 	// Build the list of posts card components for the mailbox content
 	let list = [];
 	for (let i = 0; i < posts.length; i += 1) {
-		list.push(<Post name={posts[i].name} date={posts[i].modified}  index={posts[i].id} likes={ posts[i].likes } body={posts[i].body} key={posts[i].id}/>)
+		list.push(<Post name={ posts[i].name } date={ posts[i].modified }  index={ i } id={ posts[i].id } likes={ posts[i].likes } body={ posts[i].body } key={ posts[i].id }/>)
 	}
 
 	class Posts extends React.Component {
@@ -161,12 +165,52 @@ function renderPosts(posts) {
 	// })
 }
 
+
+function load_profile(user_id) {
+	postDisplayContext = 'user';
+	let userProfile = [];
+	fetch(`/user/${user_id}`)
+	.then(response => {
+		if (response.status.toString().charAt(0) === '2') return response.json();
+		else return { error: response.status };
+	})
+	.then(result => {
+		console.log('result');
+		// Print result
+	    console.log(result);
+	    if (!result.error) {
+	    	load_posts(`user_id=${user_id}`);
+	    }
+
+
+	 //    // Show and animate email sent status message
+		// if (result === 200 || result === 201) {
+		// 	messageSuccess.style.display = 'block';
+		// 	messageSuccess.classList.add('animateMessage');
+		// 	setTimeout(function() {
+		//     	// Email is sent succuessfullly so show the 'sent' mailbox
+		//     	load_mailbox('sent');
+	 //    	}, 2000);
+		// } else if (result === 400) {
+		// 	// Error sending email so show 
+		// 	messageError.style.display = 'block';
+		// 	messageError.classList.add('animateMessage');
+		// }
+	})
+	.catch((error) => {
+		console.error('Error', error);
+	});
+
+}
+
+
+
 // Load posts based on some context, where the default context is all posts
 // ... other options are to load posts of a specific user or all posts for users that the 
 // ... authenticated user is following
-function load_posts(context) {
+function load_posts(query='') {
 	console.log('loading')
-	fetch(`/posts/${context}`)
+	fetch(`/posts?${query}`)
 		.then(response => response.json())
 		.then(posts => {
 

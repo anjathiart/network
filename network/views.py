@@ -22,25 +22,32 @@ def post(request):
 	pass
 
 # return all posts
-def posts(request, context):
+def posts(request):
+	# print(context)
 	if request.method == "POST":
 		print('trying to post')
-	elif context == "all":
-		# Return posts in reverse chronologial order
-		posts = Post.objects.all()
 
-	elif context == "followed":
-		followed_users = User.objects.filter(followers = request.user).all()
-		posts = Post.objects.filter(user__in = followed_users).all()
+	else:
+		if request.GET.get('user_id') is not None:
+			posts = Post.objects.filter(user__id = request.GET.get('user_id')).all()
+		else:
+			posts = Post.objects.all()
 
-	return JsonResponse([post.serialize() for post in posts], safe=False)
+		return JsonResponse([post.serialize() for post in posts], safe=False)
 
 
 def posts_followers(request):
 	pass
 
 def profile(request, user_id):
-	pass
+	# Query for user
+	try:
+		user = User.objects.get(id=user_id)
+	except User.DoesNotExist:
+		return JsonResponse({"error": "User not found."}, status=404)
+
+	return JsonResponse(user.serialize(), safe=False)
+
 
 def update(request, post_id):
 
@@ -53,26 +60,15 @@ def update(request, post_id):
 
 	# Check recipient emails
 	data = json.loads(request.body)
-	print(data)
 
-	# valid body parameters: liked | content
-	# Update whether email is read or should be archived
-	# if request.method == "PUT":
-	# 	data = json.loads(request.body)
-	# 	if data.get("liked") is not None:
-	# 		post.read = data["read"]
-	# 	if data.get("archived") is not None:
-	# 		email.archived = data["archived"]
-	# 	email.save()
-	# 	return HttpResponse(status=204)
-
-	if data['liked'] == True:
-		print('like post')
-	elif data['liked'] == False:
-		print('unlike post')
-
-
-	return JsonResponse({"error": "TODO"}, status=400)
+	if data.get('liked') is not None:
+		if data['liked'] == False:
+			post.likes.remove(request.user)
+		else:
+			post.likes.add(request.user)
+			
+	post.save()
+	return HttpResponse(status=204)
 
 
 def follow(request, user_id):
