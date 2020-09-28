@@ -1,4 +1,4 @@
-let currentUserId = null;
+let currentUser = null;
 
 // all posts (all) | posts of those the user follows (follows) | posts of a particular user (user)
 let postDisplayContext = 'all';
@@ -15,7 +15,7 @@ if( document.readyState !== 'loading' ) {
 }
 
 
-function myInitCode() {
+async function myInitCode() {
 	
 
 
@@ -26,15 +26,23 @@ function myInitCode() {
 	document.querySelector('#compose').addEventListener('click', () => compose_email());
 	document.querySelector('#sendMail').addEventListener('click', send_email);*/
 
-	// Initialise global variables
-	postDisplayContext = 'all';
-	fetch(`/user/current`)
-		.then(response => response.json())
-		.then(result => {
-			currentUserId = result.id
+	document.querySelector('#nav__allPosts').addEventListener('click', async () => {
+		// await load_current_user();
 	});
 
+	// Initialise global variables
+	postDisplayContext = 'all';
+	await load_current_user();
 	load_posts();
+}
+
+async function load_current_user() {
+	console.log('load current')
+	await fetch(`/user/current`)
+		.then(async response => await response.json())
+		.then(result => {
+			currentUser = result
+	});
 }
 
 function renderPosts(posts) {
@@ -44,12 +52,12 @@ function renderPosts(posts) {
 			super(props);
 			this.state = {
 				"post_id": props.index,
-				"liked": props.likes.indexOf(parseInt(currentUserId, 10)) >= 0,
+				"liked": props.likes.indexOf(parseInt(currentUser.id, 10)) >= 0,
 			};
 		}
 		render() {
 			return (
-        		<div id={ "post" + this.props.id }>
+				<div id={ "post" + this.props.id }>
 					<div className="post__header">
 						<p onClick={ this.actionUser.bind(this, this.props.index) }>{ this.props.name }</p>
 						<button>Edit</button>
@@ -72,11 +80,23 @@ function renderPosts(posts) {
 		}
 
 		actionUser = (post_index) => {
-			console.log(post_index)
-			let index = parseInt(post_index, 10);
-			let user_id = posts[post_index].userId;
-			load_profile(user_id);
-
+			let user_id = posts[parseInt(post_index, 10)].userId;
+			postDisplayContext = 'user';
+			let userProfile = [];
+			fetch(`/user/${user_id}`)
+			.then(response => {
+				if (response.status.toString().charAt(0) === '2') return response.json();
+				else return { error: response.status };
+			})
+			.then(result => {
+				if (!result.error) {
+					render_profile(result);
+					load_posts(`user_id=${user_id}`);
+				}
+			})
+			.catch((error) => {
+				console.error('Error', error);
+			});
 		}
 
 		actionEdit = () => {
@@ -84,7 +104,6 @@ function renderPosts(posts) {
 		}
 
 		updatePost = (post_id, fields) => {
-
 			let csrftoken = Cookies.get('csrftoken');
 
 			fetch(`posts/${post_id}/update`, {
@@ -98,42 +117,6 @@ function renderPosts(posts) {
 	 				load_posts();
 				}
 			});
-
-	// 		fetch('/emails', {
-	// 	method: 'POST',
-	// 	body: JSON.stringify({
-	// 		recipients,
-	// 		subject,
-	// 		body,
-	// 	})
-	// })
-	// .then(response => {
-	// 	// intercept response
-	// 	return response.status;
-	// })
-	// .then(result => {
-
-	// 	// Print result
-	//     console.log(result);
-
-	//     // Show and animate email sent status message
-	// 	if (result === 200 || result === 201) {
-	// 		messageSuccess.style.display = 'block';
-	// 		messageSuccess.classList.add('animateMessage');
-	// 		setTimeout(function() {
-	// 	    	// Email is sent succuessfullly so show the 'sent' mailbox
-	// 	    	load_mailbox('sent');
-	//     	}, 2000);
-	// 	} else if (result === 400) {
-	// 		// Error sending email so show 
-	// 		messageError.style.display = 'block';
-	// 		messageError.classList.add('animateMessage');
-	// 	}
-	// })
-	// .catch((error) => {
-	// 	console.error('Error', error);
-	// });
-
 
 		}
 
@@ -166,40 +149,56 @@ function renderPosts(posts) {
 }
 
 
-function load_profile(user_id) {
-	postDisplayContext = 'user';
-	let userProfile = [];
-	fetch(`/user/${user_id}`)
-	.then(response => {
-		if (response.status.toString().charAt(0) === '2') return response.json();
-		else return { error: response.status };
-	})
-	.then(result => {
-		console.log('result');
-		// Print result
-	    console.log(result);
-	    if (!result.error) {
-	    	load_posts(`user_id=${user_id}`);
-	    }
+function render_profile(user) {
+	console.log(user)
+	class Profile extends React.Component {
+		constructor(props) {
+			super(props);
+			this.state = {
+				allowFollow: user.id !== currentUser.id,
+			};
+		}
+		render() {
+			return (
+				<div className="profile">
+					<h3 className="profile__heading">{ user.name }'s Profile</h3>
+					<p className="profile__followers">Followed by { user.followers.length } { user.followers.length === 1 ? 'user' : 'users' }</p>
+					<p className="profile__follows">{ user.name } follows { user.followsCount} { user.followsCount === 1 ? 'user' : 'users' }</p> 
+					{ this.state.allowFollow
+						? <button onClick={ this.actionFollow }>{ user.followers.indexOf(currentUser.id) >= 0 ? 'Unfollow' : 'Follow' }</button>
+						: null
+					}
+				</div>
+			);
+		}
 
+		actionFollow = async () => {
+			let csrftoken = Cookies.get('csrftoken');
 
-	 //    // Show and animate email sent status message
-		// if (result === 200 || result === 201) {
-		// 	messageSuccess.style.display = 'block';
-		// 	messageSuccess.classList.add('animateMessage');
-		// 	setTimeout(function() {
-		//     	// Email is sent succuessfullly so show the 'sent' mailbox
-		//     	load_mailbox('sent');
-	 //    	}, 2000);
-		// } else if (result === 400) {
-		// 	// Error sending email so show 
-		// 	messageError.style.display = 'block';
-		// 	messageError.classList.add('animateMessage');
-		// }
-	})
-	.catch((error) => {
-		console.error('Error', error);
-	});
+			let status = await fetch(`user/${user.id}`, {
+				method: 'PUT',
+				body: JSON.stringify({
+					follow: (user.followers.indexOf(currentUser.id) >= 0) ? false : true
+				}),
+				headers: { "X-CSRFToken": csrftoken },
+				credentials: 'same-origin',
+
+			}).then(response => {
+				if (response.status.toString().charAt(0) === '2') return response.json();
+				else return { error: response.status };
+			}).then(async result => {
+				if (!result.error) {
+					await load_current_user()
+					render_profile(result)
+				}
+			})
+			.catch((error) => {
+				console.error('Error', error);
+			});
+		}
+	}
+
+	ReactDOM.render(<Profile />, document.querySelector("#profile__component"));
 
 }
 
@@ -209,14 +208,12 @@ function load_profile(user_id) {
 // ... other options are to load posts of a specific user or all posts for users that the 
 // ... authenticated user is following
 function load_posts(query='') {
-	console.log('loading')
 	fetch(`/posts?${query}`)
 		.then(response => response.json())
 		.then(posts => {
 
 		// Print posts
 		console.log(posts);
-		document.querySelector('#test').innerHTML = posts[0].body
 		// ... do something else with posts ...
 		renderPosts(posts)
 	});

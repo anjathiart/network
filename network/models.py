@@ -3,14 +3,14 @@ from django.db import models
 
 
 class User(AbstractUser):
-	followers = models.ManyToManyField('self', related_name="users_following")
-	follows = models.ManyToManyField('self', related_name="users_followed")
+	followers = models.ManyToManyField("User", related_name="users_following")
+	# follows = models.ManyToManyField('self', related_name="users_followed")
 	def serialize(self):
 		return {
 			"id": self.id,
-			"name": self.username,
-			"followers": self.followers.count(),
-			"follows": self.follows.count(),
+			"name": self.username.capitalize(),
+			"followers": [user.id for user in self.followers.all()],
+			# "follows": [user.id for user in self.follows.all()],
 		}
 
 
@@ -21,7 +21,7 @@ class Post(models.Model):
 	body = models.TextField(blank=True)
 	created_at = models.DateTimeField(auto_now_add=True)
 	modified_at = models.DateTimeField(auto_now=True)
-	likes = models.ManyToManyField('User', related_name="liked_posts" )
+	likes = models.ManyToManyField('User', blank=True, related_name="liked_posts" )
 	# user = models.ForeignKey("User", on_delete=models.CASCADE, related_name="emails")
 	# sender = models.ForeignKey("User", on_delete=models.PROTECT, related_name="emails_sent")
 	# recipients = models.ManyToManyField("User", related_name="emails_received")
@@ -33,7 +33,7 @@ class Post(models.Model):
 	def serialize(self):
 		return {
 			"id": self.id,
-			"name": self.user.username,
+			"name": self.user.username.capitalize(),
 			"userId": self.user.id,
 			"body": self.body,
 			"created": self.created_at.strftime("%b %-d %Y, %-I:%M %p"),

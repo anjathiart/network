@@ -16,7 +16,13 @@ def index(request):
 	return render(request, "network/index.html")
 
 def userId(request):
-	return JsonResponse({ "id": request.user.id }, safe=False)
+	print(request.user.id)
+	# products = Product.objects.filter(store_set__in=stores_qs)
+	# follows = request.user.filter()
+	follows = User.objects.filter(followers__id=request.user.id).count()
+	result = request.user.serialize()
+	result['followsCount'] = follows
+	return JsonResponse(result, safe=False)
 
 def post(request):
 	pass
@@ -46,7 +52,24 @@ def profile(request, user_id):
 	except User.DoesNotExist:
 		return JsonResponse({"error": "User not found."}, status=404)
 
-	return JsonResponse(user.serialize(), safe=False)
+	if request.method == "PUT":
+		data = json.loads(request.body)
+
+		if data.get("follow") is not None:
+			current_user = User.objects.get(id = request.user.id)
+			print('current')
+			print(request.user.id)
+			print('userProfile')
+			print(user.id)
+			if data["follow"] == False:
+				user.followers.remove(current_user)
+			if data["follow"] == True:
+				user.followers.add(current_user)
+	user.save()
+	result = user.serialize()
+			
+	result['followsCount'] = User.objects.filter(followers__id=user_id).count()	
+	return JsonResponse(result, safe=False)
 
 
 def update(request, post_id):
