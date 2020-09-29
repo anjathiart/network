@@ -74,39 +74,41 @@ def profile(request, user_id):
 
 def update(request, post_id):
 
-	# Query for post
-	try:
-		post = Post.objects.get(id=post_id)
-	except Post.DoesNotExist:
-		return JsonResponse({"error": "Post not found."}, status=404)
+	if request.method == "PUT":
+		# Query for post
+		try:
+			post = Post.objects.get(id=post_id)
+		except Post.DoesNotExist:
+			return JsonResponse({"error": "Post not found."}, status=404)
 
 
-	# Check recipient emails
-	data = json.loads(request.body)
+		# Check recipient emails
+		data = json.loads(request.body)
 
-	if data.get('liked') is not None:
-		if data['liked'] == False:
-			post.likes.remove(request.user)
-		else:
-			post.likes.add(request.user)
-			
-	post.save()
-	return HttpResponse(status=204)
+		if data.get('liked') is not None:
+			if data['liked'] == False:
+				post.likes.remove(request.user)
+			else:
+				post.likes.add(request.user)
+		post.save()
+
+		if data.get('body') is not None:
+			if post.user.id != request.user.id:
+				return JsonResponse({"error": "FORBIDDEN!"}, status=405)
+			elif len(data['body']) == 0:
+				return JsonResponse({"error": "Body cannot be empty"}, status=400)
+			else:
+				Post.objects.filter(id=post_id).update(body = data['body'])
+
+		return HttpResponse(status=204)
+	else:
+		return JsonResponse({"error": "Method not allowed!"}, status=405)
 
 
 def follow(request, user_id):
 	pass
 
 
-
-
-# API CALLS:
-# GET posts, GET posts/userID, GET posts/following
-# POST post
-# Edit a post
-# Like a post
-# Follow a user
-# GET user - get user details and get posts
 
 
 def login_view(request):

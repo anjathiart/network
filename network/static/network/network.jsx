@@ -51,8 +51,11 @@ function renderPosts(posts) {
 		constructor(props) {
 			super(props);
 			this.state = {
-				"post_id": props.index,
+				"post_id": props.id,
 				"liked": props.likes.indexOf(parseInt(currentUser.id, 10)) >= 0,
+				"editing": false,
+				"post_body": props.body,
+				"modified_post_body": props.body,
 			};
 		}
 		render() {
@@ -60,23 +63,28 @@ function renderPosts(posts) {
 				<div id={ "post" + this.props.id }>
 					<div className="post__header">
 						<p onClick={ this.actionUser.bind(this, this.props.index) }>{ this.props.name }</p>
-						<button>Edit</button>
+						{ (currentUser.id === this.props.user_id) ? <button onClick={ this.actionEdit }>Edit</button>  : null }
 					</div>
 					<p className="post__date">{ this.props.date }</p>
-					<p className="post__content">{ this.props.body }</p>
+					{ this.state.editing
+						? <div>
+							<textarea className="post__content" value={ this.state.modified_post_body } onChange={ (e) => this.setState({modified_post_body: e.target.value }) }>{ this.state.post_body }</textarea>
+							<button onClick={ this.cancelEdit }>Cancel</button>
+							<button onClick={ this.updatePost.bind(this, { body: this.state.modified_post_body }) }>Save</button>
+						</div>
+						: <p className="post__content">{ this.state.post_body }</p>
+					}
+					
+
+
+
 					<div className="post__footer">
 						<p>Number Likes: { this.props.likes.length }</p>
-						<button onClick={ this.actionLike.bind(this, this.props.id) }>{ this.state.liked ? 'Unlike' : 'Like' }</button>
+						<button onClick={ this.updatePost.bind(this, { liked: !this.state.liked }) }>{ this.state.liked ? 'Unlike' : 'Like' }</button>
 					</div>
+					
 				</div>
 			);
-		}
-
-		actionLike = (post_id) => {
-			console.log(post_id);
-			this.updatePost(post_id, {
-				liked: !this.state.liked
-			});
 		}
 
 		actionUser = (post_index) => {
@@ -99,14 +107,19 @@ function renderPosts(posts) {
 			});
 		}
 
-		actionEdit = () => {
-			alert('edit')
+		actionEdit = () => { this.setState(state => ({ editing: true })); }
+
+		cancelEdit = () => {
+			this.setState(state => ({ 
+				editing: false,
+				modified_post_body: this.state.post_body
+			}));
 		}
 
-		updatePost = (post_id, fields) => {
+		updatePost = (fields) => {
 			let csrftoken = Cookies.get('csrftoken');
 
-			fetch(`posts/${post_id}/update`, {
+			fetch(`posts/${this.state.post_id}/update`, {
 				method: 'PUT',
 				body: JSON.stringify(fields),
 				headers: { "X-CSRFToken": csrftoken },
@@ -115,6 +128,8 @@ function renderPosts(posts) {
 			}).then(response => {
 				if (response.status.toString().charAt(0) === '2') {
 	 				load_posts();
+				} else {
+					// TODO
 				}
 			});
 
@@ -125,7 +140,7 @@ function renderPosts(posts) {
 	// Build the list of posts card components for the mailbox content
 	let list = [];
 	for (let i = 0; i < posts.length; i += 1) {
-		list.push(<Post name={ posts[i].name } date={ posts[i].modified }  index={ i } id={ posts[i].id } likes={ posts[i].likes } body={ posts[i].body } key={ posts[i].id }/>)
+		list.push(<Post name={ posts[i].name } date={ posts[i].created }  index={ i } id={ posts[i].id } likes={ posts[i].likes } body={ posts[i].body } user_id={ posts[i].userId } key={ posts[i].id }/>)
 	}
 
 	class Posts extends React.Component {
