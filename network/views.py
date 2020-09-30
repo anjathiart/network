@@ -33,9 +33,20 @@ def posts(request):
 	if request.method == "POST":
 		print('trying to post')
 
-	else:
+	elif request.method == "GET":
 		if request.GET.get('user_id') is not None:
 			posts = Post.objects.filter(user__id = request.GET.get('user_id')).all()
+		elif request.GET.get('following') is not None:
+			# User.objects.filter(followers__id=user_id).count()
+			# posts1 = User.postsobjects.postsfilter(id=request.user.id).posts.all()
+		# 	posts1 = Post.objects.user.filter(users_following__id=request.user.id).all()
+			users_followed = User.objects.filter(followers__id=request.user.id).all()
+			posts = []
+			# posts = [user.id for user in self.likes.all()],
+			for user in users_followed:
+				user_posts = Post.objects.filter(user_id=user.id).all()
+				for user_post in user_posts:
+					posts.append(user_post)
 		else:
 			posts = Post.objects.all()
 

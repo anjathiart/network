@@ -29,7 +29,7 @@
                   <a id="nav__allPosts" class="nav-link" href="{% url 'index' %}">All Posts</a>
                 </li>
                 {% if user.is_authenticated %}
-                    <li class="nav-item">
+                    <li class="nav-item" id="nav__following">
                         <a class="nav-link" href="#">Following</a>
                     </li>
                     <li class="nav-item">
