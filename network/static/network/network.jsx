@@ -27,6 +27,26 @@ async function myInitCode() {
 
 	});
 
+	document.querySelector(".newPost__submit").addEventListener('click', () => {
+		let csrftoken = Cookies.get('csrftoken');
+
+			fetch(`posts`, {
+				method: 'POST',
+				body: JSON.stringify({
+					body: document.querySelector(".newPost__input").value
+				}),
+				headers: { "X-CSRFToken": csrftoken },
+				credentials: 'same-origin',
+
+			}).then(response => {
+				if (response.status.toString().charAt(0) === '2') {
+	 				load_posts();
+				} else {
+					// TODO
+				}
+			});
+	})
+
 	// Initialise global variables
 	await load_current_user();
 	load_posts();
@@ -71,9 +91,9 @@ function renderPosts(posts) {
 					}
 					<div className="post__footer">
 						<p>Number Likes: { this.props.likes.length }</p>
-						<button onClick={ this.updatePost.bind(this, { liked: !this.state.liked }) }>{ this.state.liked ? 'Unlike' : 'Like' }</button>
+						<button onClick={ this.actionUpdateLike.bind(this, this.state.liked ? 'unlike' : 'like') }>{ this.state.liked ? 'Unlike' : 'Like' }</button>
 					</div>
-					
+	
 				</div>
 			);
 		}
@@ -104,10 +124,25 @@ function renderPosts(posts) {
 			}));
 		}
 
+		actionUpdateLike = (action) => {
+			let csrftoken = Cookies.get('csrftoken');
+			fetch(`posts/${this.state.post_id}/${action}`, {
+				method: 'PUT',
+				headers: { "X-CSRFToken": csrftoken },
+				credentials: 'same-origin',
+			}).then(response => {
+				if (response.status.toString().charAt(0) === '2') {
+	 				load_posts(`user_id=${this.props.user_id}`);
+				} else {
+					// TODO
+				}
+			});
+		}
+
 		updatePost = (fields) => {
 			let csrftoken = Cookies.get('csrftoken');
 
-			fetch(`posts/${this.state.post_id}/update`, {
+			fetch(`posts/${this.state.post_id}/edit`, {
 				method: 'PUT',
 				body: JSON.stringify(fields),
 				headers: { "X-CSRFToken": csrftoken },

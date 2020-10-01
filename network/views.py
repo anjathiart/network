@@ -11,51 +11,56 @@ from django.urls import reverse
 
 from .models import User, Post
 
-
 def index(request):
 	return render(request, "network/index.html")
 
+@login_required(login_url='/login')
 def userId(request):
-	print(request.user.id)
-	# products = Product.objects.filter(store_set__in=stores_qs)
-	# follows = request.user.filter()
 	follows = User.objects.filter(followers__id=request.user.id).count()
 	result = request.user.serialize()
 	result['followsCount'] = follows
 	return JsonResponse(result, safe=False)
 
-def post(request):
-	pass
-
 # return all posts
 def posts(request):
-	# print(context)
-	if request.method == "POST":
-		print('trying to post')
-
-	elif request.method == "GET":
+	
+	if request.method == "GET":
 		if request.GET.get('user_id') is not None:
 			posts = Post.objects.filter(user__id = request.GET.get('user_id')).all()
 		elif request.GET.get('following') is not None:
-			# User.objects.filter(followers__id=user_id).count()
-			# posts1 = User.postsobjects.postsfilter(id=request.user.id).posts.all()
-		# 	posts1 = Post.objects.user.filter(users_following__id=request.user.id).all()
 			users_followed = User.objects.filter(followers__id=request.user.id).all()
-			posts = []
-			# posts = [user.id for user in self.likes.all()],
-			for user in users_followed:
-				user_posts = Post.objects.filter(user_id=user.id).all()
-				for user_post in user_posts:
-					posts.append(user_post)
+			posts = Post.objects.filter(user__in=users_followed).all()
 		else:
 			posts = Post.objects.all()
 
 		return JsonResponse([post.serialize() for post in posts], safe=False)
 
+	elif request.method == "POST" or request.method == "PUT":
+		data = json.loads(request.body)
+		if data.get('body') is None:
+			return JsonResponse({"error": "Body missing"}, status=400)
+		elif len(data['body']) == 0:
+			return JsonResponse({"error": "Post cannot be empty"}, status=400)
+	
+		if request.method == "POST":
+			post = Post(body=data["body"], user=request.user)
+			post.save()
+			return HttpResponse(status=200)
 
-def posts_followers(request):
-	pass
+		if request.method == "PUT":
+			try:
+				post = Post.objects.get(id=post_id)
+			except Post.DoesNotExist:
+				return JsonResponse({"error": "Post not found."}, status=404)
 
+			Post.objects.filter(id=post_id).update(body = data['body'])
+			return HttpResponse(status=204)
+
+	else:
+		return JsonResponse({"error": "Method not allowed!"}, status=405)
+
+
+@login_required(login_url='/login')
 def profile(request, user_id):
 	# Query for user
 	try:
@@ -65,26 +70,20 @@ def profile(request, user_id):
 
 	if request.method == "PUT":
 		data = json.loads(request.body)
-
 		if data.get("follow") is not None:
-			current_user = User.objects.get(id = request.user.id)
-			print('current')
-			print(request.user.id)
-			print('userProfile')
-			print(user.id)
+			current_user = User.objects.get(id=request.user.id)
 			if data["follow"] == False:
 				user.followers.remove(current_user)
 			if data["follow"] == True:
 				user.followers.add(current_user)
 	user.save()
-	result = user.serialize()
-			
-	result['followsCount'] = User.objects.filter(followers__id=user_id).count()	
+	result = user.serialize()		
+	result['followsCount'] = User.objects.filter(followers__id=user_id).count()
+
 	return JsonResponse(result, safe=False)
 
-
-def update(request, post_id):
-
+@login_required(login_url='/login')
+def like(request, post_id):
 	if request.method == "PUT":
 		# Query for post
 		try:
@@ -92,32 +91,48 @@ def update(request, post_id):
 		except Post.DoesNotExist:
 			return JsonResponse({"error": "Post not found."}, status=404)
 
-
-		# Check recipient emails
-		data = json.loads(request.body)
-
-		if data.get('liked') is not None:
-			if data['liked'] == False:
-				post.likes.remove(request.user)
-			else:
-				post.likes.add(request.user)
+		post.likes.add(request.user)
 		post.save()
-
-		if data.get('body') is not None:
-			if post.user.id != request.user.id:
-				return JsonResponse({"error": "FORBIDDEN!"}, status=405)
-			elif len(data['body']) == 0:
-				return JsonResponse({"error": "Body cannot be empty"}, status=400)
-			else:
-				Post.objects.filter(id=post_id).update(body = data['body'])
-
 		return HttpResponse(status=204)
+
 	else:
 		return JsonResponse({"error": "Method not allowed!"}, status=405)
 
+@login_required(login_url='/login')
+def unlike(request, post_id):
+	if request.method == "PUT":
+		try:
+			post = Post.objects.get(id=post_id)
+		except Post.DoesNotExist:
+			return JsonResponse({"error": "Post not found."}, status=404)
 
-def follow(request, user_id):
-	pass
+		post.likes.remove(request.user)
+		post.save()
+
+		return HttpResponse(status=204)
+
+	else:
+		return JsonResponse({"error": "Method not allowed!"}, status=405)
+
+@login_required(login_url='/login')
+def edit(request, post_id):
+	if request.method == "PUT":
+		try:
+			post = Post.objects.get(id=post_id)
+		except Post.DoesNotExist:
+			return JsonResponse({"error": "Post not found."}, status=404)
+
+		data = json.loads(request.body)
+		if data.get('body') is None:
+			return JsonResponse({"error": "Body missing"}, status=400)
+		elif len(data['body']) == 0:
+			return JsonResponse({"error": "Post cannot be empty"}, status=400)
+		else:
+			Post.objects.filter(id=post_id).update(body = data['body'])
+			return HttpResponse(status=204)
+
+	else:
+		return JsonResponse({"error": "Method not allowed!"}, status=405)
 
 
 
