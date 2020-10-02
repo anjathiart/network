@@ -1,3 +1,83 @@
+body {
+  background-color: grey;
+}
 
+p, h1, h2, h3, h4, h5, h6 {
+  margin: 0px;
+}
+
+.link {
+  color: blue;
+  text-decoration: underline;
+}
+
+.body {
+  width: 1024px;
+  margin-left: auto;
+  margin-right: auto;
+  border: 1px solid red;
+}
+
+section {
+  margin: 18px;
+  padding: 24px;
+  border: 1px solid black;
+  border-radius: 3px;
+  background-color: white;
+}
+
+.newPost textarea {
+  padding: 6px;
+  display: block;
+  width: 100%;
+}
+.newPost button {
+  margin-top: 12px;
+}
+
+.post {
+  padding: 18px;
+  border: 1px solid red;
+  margin-bottom: 24px;
+}
+.post:last-child {
+  margin-bottom: 0px;
+}
+.post__header {
+  margin: 0px;
+  padding: 0px;
+  border: 1px solid pink;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+}
+.post__header > * {
+  border: 1px solid pink;
+  cursor: pointer;
+}
+.post__subHeader {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+}
+.post__date {
+  font-style: italic;
+  color: grey;
+  font-size: 80%;
+}
+.post__footer {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+}
+.post__footer p {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  width: 4rem;
+}
+.post__footer p > span {
+  padding-left: 6px;
+}
 
 /*# sourceMappingURL=styles.css.map */

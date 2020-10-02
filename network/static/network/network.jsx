@@ -19,6 +19,7 @@ if( document.readyState !== 'loading' ) {
 
 async function myInitCode() {
 
+	feather.replace()
 	// Handle routing to the following page
 	document.querySelector('#nav__following').addEventListener('click', async () => {
 		ReactDOM.unmountComponentAtNode(document.getElementById('profile__component'));
@@ -75,23 +76,29 @@ function renderPosts(posts) {
 		}
 		render() {
 			return (
-				<div id={ "post" + this.props.id }>
+				<div id={ "post" + this.props.id } className="post">
 					<div className="post__header">
-						<p onClick={ this.actionUser.bind(this, this.props.index) }>{ this.props.name }</p>
-						{ (currentUser.id === this.props.user_id) ? <button onClick={ this.actionEdit }>Edit</button>  : null }
+						<i data-feather="user"></i>
+						<h5 onClick={ this.actionUser.bind(this, this.props.index) }>{ this.props.name }</h5>
 					</div>
-					<p className="post__date">{ this.props.date }</p>
+					<div className="post__subHeader">
+						{ (currentUser.id === this.props.user_id) ? <p onClick={ this.actionEdit } className="link">Edit</p>  : null }
+						<p className="post__date">{ this.props.date }</p>
+					</div>
 					{ this.state.editing
-						? <div>
+						? <div className="newPost">
 							<textarea className="post__content" value={ this.state.modified_post_body } onChange={ (e) => this.setState({modified_post_body: e.target.value }) }>{ this.state.post_body }</textarea>
-							<button onClick={ this.cancelEdit }>Cancel</button>
-							<button onClick={ this.updatePost.bind(this, { body: this.state.modified_post_body }) }>Save</button>
+							<a onClick={ this.cancelEdit } className="link">Cancel</a>
+							<button onClick={ this.updatePost.bind(this, { body: this.state.modified_post_body }) } className="btn btn-primary">Save</button>
 						</div>
 						: <p className="post__content">{ this.state.post_body }</p>
 					}
 					<div className="post__footer">
-						<p>Number Likes: { this.props.likes.length }</p>
-						<button onClick={ this.actionUpdateLike.bind(this, this.state.liked ? 'unlike' : 'like') }>{ this.state.liked ? 'Unlike' : 'Like' }</button>
+						<p>
+							<i data-feather="thumbs-up"></i>
+							<span>{ this.props.likes.length }</span>
+						</p>
+						<button onClick={ this.actionUpdateLike.bind(this, this.state.liked ? 'unlike' : 'like') } className="btn btn-primary">{ this.state.liked ? 'Unlike' : 'Like' }</button>
 					</div>
 	
 				</div>
@@ -176,6 +183,7 @@ function renderPosts(posts) {
 	}
 
 	ReactDOM.render(<Posts />, document.querySelector("#posts__component"));
+	feather.replace()
 }
 
 
@@ -229,6 +237,7 @@ function render_profile(user) {
 	}
 
 	ReactDOM.render(<Profile />, document.querySelector("#profile__component"));
+	feather.replace()
 
 }
 
@@ -246,56 +255,5 @@ function load_posts(query='') {
 		console.log(posts);
 		// ... do something else with posts ...
 		renderPosts(posts)
-	});
-}
-
-function send_email() {
-
-	const subject = document.querySelector('#compose-subject').value;
-	const recipients = document.querySelector('#compose-recipients').value;
-	const body = document.querySelector('#compose-body').value;
-
-	const messageSuccess = document.querySelector('.message--success');
-	const messageError = document.querySelector('.message--error');
-	messageSuccess.classList.remove('animateMessage');
-	messageError.classList.remove('animateMessage');
-	messageSuccess.style.display = 'none';
-	messageError.style.display = 'none';
-
-	// TODO: validate input
-
-	fetch('/emails', {
-		method: 'POST',
-		body: JSON.stringify({
-			recipients,
-			subject,
-			body,
-		})
-	})
-	.then(response => {
-		// intercept response
-		return response.status;
-	})
-	.then(result => {
-
-		// Print result
-	    console.log(result);
-
-	    // Show and animate email sent status message
-		if (result === 200 || result === 201) {
-			messageSuccess.style.display = 'block';
-			messageSuccess.classList.add('animateMessage');
-			setTimeout(function() {
-		    	// Email is sent succuessfullly so show the 'sent' mailbox
-		    	load_mailbox('sent');
-	    	}, 2000);
-		} else if (result === 400) {
-			// Error sending email so show 
-			messageError.style.display = 'block';
-			messageError.classList.add('animateMessage');
-		}
-	})
-	.catch((error) => {
-		console.error('Error', error);
 	});
 }

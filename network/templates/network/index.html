@@ -2,20 +2,23 @@
 {% load static %}
 
 {% block body %}
+	<section>
+		<p>feather iconds</p>
+		<i data-feather="circle"></i></section>
+	<section id="profile__component"></section>
+	<section class="">
+		<form class="newPost" method="POST">
+			{% csrf_token %}
+			<h3 class="newPost__heading"><i data-feather="edit-3"></i> New Post</h3>
+			<textarea class="newPost__input" placeholder="What is happening..."></textarea>
+			<button class="btn btn-primary newPost__submit">Post</button>
+		</form>
+	</section>
 
-	<div id="profile__component"></div>
+<!-- 	<section id="postForm__component">
+	</section> -->
 
-	<form class="newPost" method="POST">
-		{% csrf_token %}
-		<!-- <h1 class="newPost__heading">Write something...</h1> -->
-		<textarea class="newPost__input" placeholder="What is happening..."></textarea>
-		<button class="btn btn-primary newPost__submit">Post</button>
-	</form>
-
-	<div id="postForm__component">
-	</div>
-
-	<div id="posts__component"></div>
+	<section id="posts__component"></section>
 
 {% endblock %}
 
