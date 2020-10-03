@@ -76,29 +76,36 @@ function renderPosts(posts) {
 		}
 		render() {
 			return (
-				<div id={ "post" + this.props.id } className="post">
-					<div className="post__header">
-						<i data-feather="user"></i>
-						<h5 onClick={ this.actionUser.bind(this, this.props.index) }>{ this.props.name }</h5>
+				<div id={ "post" + this.props.id } className="post shadow1">
+					<h4 onClick={ this.actionUser.bind(this, this.props.index) } className="post__header">
+						{ this.props.name }
+					</h4>
+					<footer className="blockquote-footer post__subHeader text-small mb-2 mt-1"><cite title="Source Title">{ this.props.date }</cite></footer>
+					
+					<div className="newPost">
+						{ this.state.editing
+							? <textarea className="post__content" value={ this.state.modified_post_body } onChange={ (e) => this.setState({modified_post_body: e.target.value }) }>{ this.state.post_body }</textarea>
+							: <p className="post__content">{ this.state.post_body }</p>
+						}
 					</div>
-					<div className="post__subHeader">
-						{ (currentUser.id === this.props.user_id) ? <p onClick={ this.actionEdit } className="link">Edit</p>  : null }
-						<p className="post__date">{ this.props.date }</p>
-					</div>
-					{ this.state.editing
-						? <div className="newPost">
-							<textarea className="post__content" value={ this.state.modified_post_body } onChange={ (e) => this.setState({modified_post_body: e.target.value }) }>{ this.state.post_body }</textarea>
-							<a onClick={ this.cancelEdit } className="link">Cancel</a>
-							<button onClick={ this.updatePost.bind(this, { body: this.state.modified_post_body }) } className="btn btn-primary">Save</button>
-						</div>
-						: <p className="post__content">{ this.state.post_body }</p>
-					}
-					<div className="post__footer">
-						<p>
-							<i data-feather="thumbs-up"></i>
+					<div className="post__footer pt-2 border-top mt-3">
+						<p className="mr-3">
+							<i data-feather="thumbs-up" className=""></i>
 							<span>{ this.props.likes.length }</span>
 						</p>
-						<button onClick={ this.actionUpdateLike.bind(this, this.state.liked ? 'unlike' : 'like') } className="btn btn-primary">{ this.state.liked ? 'Unlike' : 'Like' }</button>
+						{ !this.state.editing
+							? 
+							<p>
+								<a onClick={ this.actionUpdateLike.bind(this, this.state.liked ? 'unlike' : 'like') } className="text-primary mr-3">{ this.state.liked ? 'Unlike' : 'Like' }</a>
+								{ (currentUser.id === this.props.user_id) ? <a onClick={ this.actionEdit } className="text-secondary ml-2">Edit</a> : null }
+							</p>
+							:
+							<p>
+								<a onClick={ this.updatePost.bind(this, { body: this.state.modified_post_body }) } className="text-primary mr-3">Save</a>
+								<a onClick={ this.cancelEdit } className="text-danger">Cancel</a>
+							</p>
+						}
+
 					</div>
 	
 				</div>

@@ -2,13 +2,20 @@ body {
   background-color: grey;
 }
 
-p, h1, h2, h3, h4, h5, h6 {
+p, h1, h2, h3, h4, h5, h6, * {
   margin: 0px;
 }
 
-.link {
-  color: blue;
-  text-decoration: underline;
+a {
+  cursor: pointer;
+}
+
+.shadow1 {
+  box-shadow: 0 5px 10px rgba(154, 160, 185, 0.05), 0 15px 40px rgba(166, 173, 201, 0.2);
+}
+
+.shadow2 {
+  box-shadow: 0 7px 30px -10px rgba(150, 170, 180, 0.5);
 }
 
 .body {
@@ -21,9 +28,7 @@ p, h1, h2, h3, h4, h5, h6 {
 section {
   margin: 18px;
   padding: 24px;
-  border: 1px solid black;
   border-radius: 3px;
-  background-color: white;
 }
 
 .newPost textarea {
@@ -37,28 +42,29 @@ section {
 
 .post {
   padding: 18px;
-  border: 1px solid red;
   margin-bottom: 24px;
+  background-color: white;
 }
 .post:last-child {
   margin-bottom: 0px;
 }
 .post__header {
-  margin: 0px;
-  padding: 0px;
-  border: 1px solid pink;
-  display: flex;
-  justify-content: flex-start;
-  align-items: center;
-}
-.post__header > * {
-  border: 1px solid pink;
+  display: inline-block;
   cursor: pointer;
+  font-size: 18px;
+  font-weight: 600;
+}
+.post__header:hover {
+  color: magenta;
 }
 .post__subHeader {
   display: flex;
   justify-content: flex-start;
   align-items: center;
+}
+.post blockquote {
+  font-size: 18px;
+  margin: 0px;
 }
 .post__date {
   font-style: italic;
@@ -74,7 +80,6 @@ section {
   display: flex;
   justify-content: flex-start;
   align-items: center;
-  width: 4rem;
 }
 .post__footer p > span {
   padding-left: 6px;

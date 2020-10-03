@@ -2,14 +2,11 @@
 {% load static %}
 
 {% block body %}
-	<section>
-		<p>feather iconds</p>
-		<i data-feather="circle"></i></section>
-	<section id="profile__component"></section>
-	<section class="">
+	<section class="bg-light" id="profile__component"></section>
+	<section class="bg-light">
 		<form class="newPost" method="POST">
 			{% csrf_token %}
-			<h3 class="newPost__heading"><i data-feather="edit-3"></i> New Post</h3>
+			<h3 class="newPost__heading">New Post</h3>
 			<textarea class="newPost__input" placeholder="What is happening..."></textarea>
 			<button class="btn btn-primary newPost__submit">Post</button>
 		</form>
@@ -18,7 +15,7 @@
 <!-- 	<section id="postForm__component">
 	</section> -->
 
-	<section id="posts__component"></section>
+	<section class="bg-light" id="posts__component"></section>
 
 {% endblock %}
 
