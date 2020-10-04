@@ -3,6 +3,7 @@ import json
 
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
 from django.db import IntegrityError
 from django.http import JsonResponse
 from django.http import HttpResponse, HttpResponseRedirect
@@ -25,6 +26,9 @@ def userId(request):
 def posts(request):
 	
 	if request.method == "GET":
+		page = request.GET.get('page', 1)
+
+
 		if request.GET.get('user_id') is not None:
 			posts = Post.objects.filter(user__id = request.GET.get('user_id')).all()
 		elif request.GET.get('following') is not None:
@@ -33,7 +37,18 @@ def posts(request):
 		else:
 			posts = Post.objects.all()
 
-		return JsonResponse([post.serialize() for post in posts], safe=False)
+		paginator = Paginator(posts, 6)
+		post_objects = paginator.get_page(page)
+		posts_serialized = [post.serialize() for post in post_objects]
+		data = {
+			"prev": post_objects.has_previous(),
+			"next": post_objects.has_next(),
+			"num_pages": paginator.num_pages,
+			"page": page,
+			"posts": posts_serialized
+		}
+
+		return JsonResponse(data, safe=False)
 
 	elif request.method == "POST" or request.method == "PUT":
 		data = json.loads(request.body)

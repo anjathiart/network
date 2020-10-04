@@ -8,6 +8,7 @@ A Twitter-like social network website for making posts and following users.
 - Django
 - Django models and migrations
 - Sqlite
+- Django Paginator
 
 ### Frontend
 - Django
@@ -26,5 +27,7 @@ And in `network/static/network`:
 `sass --watch styles.sass styles.css`
 
 ## Tests
+
+
 
 

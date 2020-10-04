@@ -1,6 +1,12 @@
 let currentUser = null;
 let currentProfileUser = null;
 let contextHeading = '';
+let pagination = {
+	page: 1,
+	limit: 10,
+	numPages: 1,
+}
+let viewQuery = '';
 
 // // all posts (all) | posts of those the user follows (follows) | posts of a particular user (user)
 // let postDisplayContext = 'all';
@@ -23,7 +29,8 @@ async function myInitCode() {
 	// Handle routing to the following page
 	document.querySelector('#nav__following').addEventListener('click', async () => {
 		ReactDOM.unmountComponentAtNode(document.getElementById('profile__component'));
-		load_posts(`following=${true}`);
+		viewQuery = `following=${true}`;
+		load_posts();
 		contextHeading = "People you follow"
 
 	});
@@ -59,6 +66,60 @@ async function load_current_user() {
 		.then(result => {
 			currentUser = result
 	});
+}
+
+function renderPagination(page, num_pages) {
+	// let pagination_items = [];
+	// for (let p = 1; p <= num_pages; p += 1) {
+	// 	pagination_items.push(
+	// 		<div key={p}
+	// 			onClick={ this.actionPagination.bind(this, p) }
+	// 			className={ 'pagination ' + pagination.page === p ? 'pagination__active' : null }>
+	// 			{ p } 
+	// 		</div>
+	// 	)
+	// }
+
+
+
+	class Pagination extends React.Component {
+
+		render() {
+			return (
+
+					<ul className="pagination">
+						{ (() => {
+							let pagination_items = [];
+							for (let p = 1; p <= num_pages; p += 1) {
+								pagination_items.push(
+									<li key={p}
+										onClick={ this.actionPagination.bind(this, p) }
+										className={ pagination.page === p ? 'pagination__active' : null }>
+										{ p } 
+									</li>
+								)
+							}
+							return pagination_items
+						})()}
+					</ul>
+				)
+
+
+
+		}
+
+		actionPagination = (selected_page) => {
+			if (selected_page !== page) {
+				load_posts(`page=${selected_page}`)
+			}
+		}
+
+
+	}
+
+
+	ReactDOM.render(<Pagination />, document.querySelector("#pagination"));
+
 }
 
 function renderPosts(posts) {
@@ -121,7 +182,8 @@ function renderPosts(posts) {
 			.then(result => {
 				if (!result.error) {
 					render_profile(result);
-					load_posts(`user_id=${this.props.user_id}`);
+					viewQuery = `user_id=${this.props.user_id}`;
+					load_posts();
 				}
 			})
 			.catch((error) => {
@@ -146,7 +208,8 @@ function renderPosts(posts) {
 				credentials: 'same-origin',
 			}).then(response => {
 				if (response.status.toString().charAt(0) === '2') {
-	 				load_posts(`user_id=${this.props.user_id}`);
+					viewQuery = `user_id=${this.props.user_id}`;
+	 				load_posts();
 				} else {
 					// TODO
 				}
@@ -164,7 +227,8 @@ function renderPosts(posts) {
 
 			}).then(response => {
 				if (response.status.toString().charAt(0) === '2') {
-	 				load_posts(`user_id=${this.props.user_id}`);
+					viewQuery = `user_id=${this.props.user_id}`;
+	 				load_posts();
 				} else {
 					// TODO
 				}
@@ -253,14 +317,21 @@ function render_profile(user) {
 // Load posts based on some context, where the default context is all posts
 // ... other options are to load posts of a specific user or all posts for users that the 
 // ... authenticated user is following
-function load_posts(query='') {
+function load_posts(q='') {
+	let query = q + '&' + viewQuery;
+	console.log(query)
 	fetch(`/posts?${query}`)
 		.then(response => response.json())
-		.then(posts => {
+		.then(({posts, page, num_pages}) => {
 
 		// Print posts
 		console.log(posts);
+		// console.log(data.posts)
+		// pagination.page = data.page
+		// pagination.numPages = data.num_pages
+
 		// ... do something else with posts ...
+		renderPagination(page, num_pages)
 		renderPosts(posts)
 	});
 }
