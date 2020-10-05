@@ -2,18 +2,24 @@
 {% load static %}
 
 {% block body %}
-	<section class="bg-light" id="profile__component"></section>
-	<section class="bg-light">
-		<form class="newPost" method="POST">
-			{% csrf_token %}
-			<h3 class="newPost__heading">New Post</h3>
-			<textarea class="newPost__input" placeholder="What is happening..."></textarea>
-			<button class="btn btn-primary newPost__submit">Post</button>
-		</form>
-	</section>
+	{% if user.is_authenticated %}
+		<section class="bg-light">
+			<form class="newPost" method="POST">
+				{% csrf_token %}
+				<!-- <h3 class="newPost__heading">New Post</h3> -->
+				<textarea class="newPost__input" placeholder="What is happening..."></textarea>
+				<button class="btn btn-primary  btn-block newPost__submit">Post</button>
+			</form>
+		</section>
 
-	<section id="pagination"></section>
-	<section class="bg-light" id="posts__component"></section>
+
+	<section id="profile__component"></section>
+
+	<section class="bg-light">
+		<div id="pagination"></div>
+		<div id="posts__component"></div>
+	</section>
+	{% endif %}
 
 {% endblock %}
 

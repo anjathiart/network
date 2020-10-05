@@ -24,99 +24,91 @@ if( document.readyState !== 'loading' ) {
 
 
 async function myInitCode() {
+	feather.replace();
 
-	feather.replace()
-	// Handle routing to the following page
-	document.querySelector('#nav__following').addEventListener('click', async () => {
-		ReactDOM.unmountComponentAtNode(document.getElementById('profile__component'));
-		viewQuery = `following=${true}`;
-		load_posts();
-		contextHeading = "People you follow"
-
-	});
-
-	document.querySelector(".newPost__submit").addEventListener('click', () => {
-		let csrftoken = Cookies.get('csrftoken');
-
-			fetch(`posts`, {
-				method: 'POST',
-				body: JSON.stringify({
-					body: document.querySelector(".newPost__input").value
-				}),
-				headers: { "X-CSRFToken": csrftoken },
-				credentials: 'same-origin',
-
-			}).then(response => {
-				if (response.status.toString().charAt(0) === '2') {
-	 				load_posts();
-				} else {
-					// TODO
-				}
-			});
-	})
-
-	// Initialise global variables
+	// load user
 	await load_current_user();
-	load_posts();
+	console.log(currentUser);
+	
+	// Handle routing to the following page
+	if (currentUser) {
+		document.querySelector('#nav__following').addEventListener('click', async () => {
+			ReactDOM.unmountComponentAtNode(document.getElementById('profile__component'));
+			document.querySelector('#profile__component').style.display = 'none';
+			viewQuery = `following=${true}`;
+			load_posts();
+			contextHeading = "People you follow"
+
+		});
+
+		document.querySelector(".newPost__submit").addEventListener('click', () => {
+			let csrftoken = Cookies.get('csrftoken');
+
+				fetch(`posts`, {
+					method: 'POST',
+					body: JSON.stringify({
+						body: document.querySelector(".newPost__input").value
+					}),
+					headers: { "X-CSRFToken": csrftoken },
+					credentials: 'same-origin',
+
+				}).then(response => {
+					if (response.status.toString().charAt(0) === '2') {
+		 				load_posts();
+					} else {
+						// TODO
+					}
+				});
+		})
+
+		load_posts();
+	}
+	
 }
 
 async function load_current_user() {
 	await fetch(`/user/current`)
 		.then(async response => await response.json())
 		.then(result => {
-			currentUser = result
+			console.log(result)
+			if (result.id) currentUser = result
 	});
 }
 
-function renderPagination(page, num_pages) {
-	// let pagination_items = [];
-	// for (let p = 1; p <= num_pages; p += 1) {
-	// 	pagination_items.push(
-	// 		<div key={p}
-	// 			onClick={ this.actionPagination.bind(this, p) }
-	// 			className={ 'pagination ' + pagination.page === p ? 'pagination__active' : null }>
-	// 			{ p } 
-	// 		</div>
-	// 	)
-	// }
-
-
+function renderPagination(page, num_pages, prev, next) {
 
 	class Pagination extends React.Component {
-
+		constructor(props) {
+			super(props);
+			this.state = {
+				"page": parseInt(page, 10),
+				"num_pages": parseInt(num_pages, 10),
+				"prevClass": prev ? null : 'disabled',
+				"nextClass": next ? null : 'disabled',
+			};
+		}
 		render() {
 			return (
-
+				<div className="paginationWrapper">
+					<h3 className="contextHeading">{ contextHeading }</h3>
 					<ul className="pagination">
-						{ (() => {
-							let pagination_items = [];
-							for (let p = 1; p <= num_pages; p += 1) {
-								pagination_items.push(
-									<li key={p}
-										onClick={ this.actionPagination.bind(this, p) }
-										className={ pagination.page === p ? 'pagination__active' : null }>
-										{ p } 
-									</li>
-								)
-							}
-							return pagination_items
-						})()}
+						<li onClick={ prev ? this.actionPagination.bind(this, 1) : null } className={ `page-item ${this.state.prevClass}` }><a className="page-link">first</a></li>
+						<li onClick={ prev ? this.actionPagination.bind(this, this.state.page - 1) : null } className={ `page-item ${this.state.prevClass}` }><a className="page-link">previous</a></li>
+						<li className="page-item active"><a className="page-link">{ `Page ${this.state.page} of ${this.state.num_pages}` }</a></li>
+						<li onClick={ next ? this.actionPagination.bind(this, this.state.page + 1) : null } className={ `page-item ${this.state.nextClass}` }><a className="page-link">next</a></li>
+						<li onClick={ next ? this.actionPagination.bind(this, this.state.num_pages) : null } className={ `page-item ${this.state.nextClass}` }><a className="page-link">last</a></li>
 					</ul>
-				)
-
-
-
+				</div>
+			)
 		}
 
 		actionPagination = (selected_page) => {
-			if (selected_page !== page) {
+			console.log(selected_page)
+			if (selected_page !== this.state.page) {
 				load_posts(`page=${selected_page}`)
 			}
 		}
-
-
 	}
-
 
 	ReactDOM.render(<Pagination />, document.querySelector("#pagination"));
 
@@ -245,10 +237,7 @@ function renderPosts(posts) {
 	class Posts extends React.Component {
 		render() {
 			return (
-				<div>
-					<h2>{ contextHeading }</h2>
-					<div>{ list }</div>
-				</div>
+				<div>{ list }</div>
 			);
 		}
 	}
@@ -259,6 +248,7 @@ function renderPosts(posts) {
 
 
 function render_profile(user) {
+	document.querySelector('#profile__component').style.display = 'block';
 	contextHeading = `${user.name}'s posts`
 	class Profile extends React.Component {
 		constructor(props) {
@@ -269,14 +259,16 @@ function render_profile(user) {
 		}
 		render() {
 			return (
-				<div className="profile">
-					<h3 className="profile__heading">{ user.name }'s Profile</h3>
-					<p className="profile__followers">Followed by { user.followers.length } { user.followers.length === 1 ? 'user' : 'users' }</p>
-					<p className="profile__follows">{ user.name } follows { user.followsCount} { user.followsCount === 1 ? 'user' : 'users' }</p> 
-					{ this.state.allowFollow
-						? <button onClick={ this.actionFollow }>{ user.followers.indexOf(currentUser.id) >= 0 ? 'Unfollow' : 'Follow' }</button>
-						: null
-					}
+				<div className="jumbotron mb-0">
+					<div className="jumbotron__header">
+						<h1 className="display-4 mb-1">{ user.name }</h1>
+						{ this.state.allowFollow
+							? <p className="ml-4"><button className="btn btn-indigo" onClick={ this.actionFollow }>{ user.followers.indexOf(currentUser.id) >= 0 ? 'Unfollow' : 'Follow' }</button></p>
+							: null
+						}
+					</div>
+					<p className="profile__followers badge badge-info badge-pill shadow3">Followed by { user.followers.length } { user.followers.length === 1 ? 'user' : 'users' }</p>
+					<p className="profile__follows badge badge-info badge-pill shadow3">{ user.name } follows { user.followsCount} { user.followsCount === 1 ? 'user' : 'users' }</p> 
 				</div>
 			);
 		}
@@ -322,8 +314,8 @@ function load_posts(q='') {
 	console.log(query)
 	fetch(`/posts?${query}`)
 		.then(response => response.json())
-		.then(({posts, page, num_pages}) => {
-
+		.then(({posts, page, num_pages, prev, next}) => {
+		ReactDOM.unmountComponentAtNode(document.getElementById('pagination'));
 		// Print posts
 		console.log(posts);
 		// console.log(data.posts)
@@ -331,7 +323,7 @@ function load_posts(q='') {
 		// pagination.numPages = data.num_pages
 
 		// ... do something else with posts ...
-		renderPagination(page, num_pages)
+		renderPagination(page, num_pages, prev, next)
 		renderPosts(posts)
 	});
 }

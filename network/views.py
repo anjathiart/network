@@ -13,14 +13,20 @@ from django.urls import reverse
 from .models import User, Post
 
 def index(request):
-	return render(request, "network/index.html")
+	if request.user.is_authenticated:
+		return render(request, "network/index.html")
+	else:
+		return render(request, "network/login.html")
 
-@login_required(login_url='/login')
+# @login_required(login_url='/login')
 def userId(request):
-	follows = User.objects.filter(followers__id=request.user.id).count()
-	result = request.user.serialize()
-	result['followsCount'] = follows
-	return JsonResponse(result, safe=False)
+	if request.user.is_authenticated:
+		follows = User.objects.filter(followers__id=request.user.id).count()
+		result = request.user.serialize()
+		result['followsCount'] = follows
+		return JsonResponse(result, safe=False)
+	else:
+		return JsonResponse({ "id": "" }, safe=False)
 
 # return all posts
 def posts(request):

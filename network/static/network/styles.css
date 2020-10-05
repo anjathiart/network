@@ -1,7 +1,3 @@
-body {
-  background-color: grey;
-}
-
 p, h1, h2, h3, h4, h5, h6, * {
   margin: 0px;
 }
@@ -18,11 +14,20 @@ a {
   box-shadow: 0 7px 30px -10px rgba(150, 170, 180, 0.5);
 }
 
+.btn-indigo {
+  background-color: #6612F1;
+  color: white;
+  opacity: 1;
+}
+.btn-indigo:hover {
+  color: white;
+  opacity: 0.6;
+}
+
 .body {
   width: 1024px;
   margin-left: auto;
   margin-right: auto;
-  border: 1px solid red;
 }
 
 section {
@@ -55,7 +60,7 @@ section {
   font-weight: 600;
 }
 .post__header:hover {
-  color: magenta;
+  color: #6612F1;
 }
 .post__subHeader {
   display: flex;
@@ -83,6 +88,41 @@ section {
 }
 .post__footer p > span {
   padding-left: 6px;
+}
+
+#profile__component {
+  display: none;
+  text-align: center;
+  background-color: transparent !important;
+}
+#profile__component .badge {
+  margin-left: 0.5rem;
+  margin-right: 0.5rem;
+  margin-top: 0.5rem;
+  padding: 6px 12px;
+  font-size: 0.9rem;
+}
+
+.jumbotron__header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.paginationWrapper {
+  display: flex;
+}
+
+.pagination {
+  margin-left: auto;
+}
+.pagination .active {
+  cursor: default;
+}
+.pagination .active > a {
+  pointer-events: none;
 }
 
 /*# sourceMappingURL=styles.css.map */
