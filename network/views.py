@@ -26,7 +26,7 @@ def userId(request):
 		result['followsCount'] = follows
 		return JsonResponse(result, safe=False)
 	else:
-		return JsonResponse({ "id": "" }, safe=False)
+		return JsonResponse({"error": "Unauthorised"}, status=401)
 
 # return all posts
 def posts(request):
@@ -68,14 +68,14 @@ def posts(request):
 			post.save()
 			return HttpResponse(status=200)
 
-		if request.method == "PUT":
-			try:
-				post = Post.objects.get(id=post_id)
-			except Post.DoesNotExist:
-				return JsonResponse({"error": "Post not found."}, status=404)
+		# if request.method == "PUT":
+		# 	try:
+		# 		post = Post.objects.get(id=post_id)
+		# 	except Post.DoesNotExist:
+		# 		return JsonResponse({"error": "Post not found."}, status=404)
 
-			Post.objects.filter(id=post_id).update(body = data['body'])
-			return HttpResponse(status=204)
+		# 	Post.objects.filter(id=post_id).update(body = data['body'])
+		# 	return HttpResponse(status=204)
 
 	else:
 		return JsonResponse({"error": "Method not allowed!"}, status=405)
@@ -137,20 +137,24 @@ def unlike(request, post_id):
 
 @login_required(login_url='/login')
 def edit(request, post_id):
+
 	if request.method == "PUT":
 		try:
 			post = Post.objects.get(id=post_id)
 		except Post.DoesNotExist:
 			return JsonResponse({"error": "Post not found."}, status=404)
 
-		data = json.loads(request.body)
-		if data.get('body') is None:
-			return JsonResponse({"error": "Body missing"}, status=400)
-		elif len(data['body']) == 0:
-			return JsonResponse({"error": "Post cannot be empty"}, status=400)
+		if post.user == request.user:
+			data = json.loads(request.body)
+			if data.get('body') is None:
+				return JsonResponse({"error": "Body missing"}, status=400)
+			elif len(data['body']) == 0:
+				return JsonResponse({"error": "Post cannot be empty"}, status=400)
+			else:
+				Post.objects.filter(id=post_id).update(body = data['body'])
+				return HttpResponse(status=204)
 		else:
-			Post.objects.filter(id=post_id).update(body = data['body'])
-			return HttpResponse(status=204)
+			return JsonResponse({"error": "Unauthorised"}, status=401)
 
 	else:
 		return JsonResponse({"error": "Method not allowed!"}, status=405)
