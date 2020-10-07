@@ -7,6 +7,54 @@ let pagination = {
 	numPages: 1,
 }
 let viewQuery = '';
+let csrftoken = '';
+
+// taken and adapted from https://stackoverflow.com/questions/51297206/fetch-api-global-error-handler answer
+const secureFetch = (url, method, data) => {
+	return new Promise((resolve, reject) => {
+		fetch(url, {
+			method: method || "GET",
+			body: JSON.stringify(data),
+			headers: { "X-CSRFToken": csrftoken },
+			credentials: 'same-origin',
+		}).then(response => {
+			// response only can be ok in range of 2XX
+			if (response.ok) {
+				// you can call response.json() here too if you want to return json
+				resolve(response);
+			} else {
+				//handle errors in the way you want to
+				switch (response.status) {
+					case 400:
+						console.log('400')
+						break;
+					case 401:
+						window.location.replace('/login');
+						break;
+					case 403:
+						console.log('403');
+						break;
+					case 404:
+						console.log('Object not found');
+						break;
+					case 500:
+						console.log('Internal server error');
+						break;
+					default:
+						console.log('Some error occured');
+					break;
+				}
+				//here you also can thorow custom error too
+				reject(response);
+			}
+		}).catch(error => {
+			//it will be invoked mostly for network errors
+			//do what ever you want to do with error here
+			console.log(error);
+			reject(error);
+		});
+	});
+}
 
 // // all posts (all) | posts of those the user follows (follows) | posts of a particular user (user)
 // let postDisplayContext = 'all';
@@ -29,7 +77,7 @@ async function myInitCode() {
 	// load user
 	await load_current_user();
 	console.log(currentUser);
-	
+	csrftoken = Cookies.get('csrftoken')
 	// Handle routing to the following page
 	if (currentUser) {
 		document.querySelector('#nav__following').addEventListener('click', async () => {
@@ -40,30 +88,14 @@ async function myInitCode() {
 			contextHeading = "People you follow"
 
 		});
-
 		document.querySelector(".newPost__submit").addEventListener('click', () => {
-			let csrftoken = Cookies.get('csrftoken');
-
-				fetch(`posts`, {
-					method: 'POST',
-					body: JSON.stringify({
-						body: document.querySelector(".newPost__input").value
-					}),
-					headers: { "X-CSRFToken": csrftoken },
-					credentials: 'same-origin',
-
-				}).then(response => {
-					if (response.status.toString().charAt(0) === '2') {
-		 				load_posts();
-					} else {
-						// TODO
-					}
-				});
-		})
-
-		load_posts();
+			secureFetch(`posts`, 'POST', { body: document.querySelector(".newPost__input").value })
+			.then(response => {
+	 			load_posts();
+			});
+		});
 	}
-	
+	load_posts();
 }
 
 async function load_current_user() {
@@ -121,7 +153,7 @@ function renderPosts(posts) {
 			super(props);
 			this.state = {
 				"post_id": props.id,
-				"liked": props.likes.indexOf(parseInt(currentUser.id, 10)) >= 0,
+				"liked": (currentUser && props.likes.indexOf(parseInt(currentUser.id, 10)) >= 0),
 				"editing": false,
 				"post_body": props.body,
 				"modified_post_body": props.body,
@@ -150,7 +182,7 @@ function renderPosts(posts) {
 							? 
 							<p>
 								<a onClick={ this.actionUpdateLike.bind(this, this.state.liked ? 'unlike' : 'like') } className="text-primary mr-3">{ this.state.liked ? 'Unlike' : 'Like' }</a>
-								{ (currentUser.id === this.props.user_id) ? <a onClick={ this.actionEdit } className="text-secondary ml-2">Edit</a> : null }
+								{ (currentUser && currentUser.id === this.props.user_id) ? <a onClick={ this.actionEdit } className="text-secondary ml-2">Edit</a> : null }
 							</p>
 							:
 							<p>
@@ -166,11 +198,8 @@ function renderPosts(posts) {
 		}
 
 		actionUser = (post_index) => {
-			fetch(`/user/${this.props.user_id}`)
-			.then(response => {
-				if (response.status.toString().charAt(0) === '2') return response.json();
-				else return { error: response.status };
-			})
+			secureFetch(`/user/${this.props.user_id}`)
+			.then(response => response.json())
 			.then(result => {
 				if (!result.error) {
 					render_profile(result);
@@ -193,37 +222,18 @@ function renderPosts(posts) {
 		}
 
 		actionUpdateLike = (action) => {
-			let csrftoken = Cookies.get('csrftoken');
-			fetch(`posts/${this.state.post_id}/${action}`, {
-				method: 'PUT',
-				headers: { "X-CSRFToken": csrftoken },
-				credentials: 'same-origin',
-			}).then(response => {
-				if (response.status.toString().charAt(0) === '2') {
-					viewQuery = `user_id=${this.props.user_id}`;
-	 				load_posts();
-				} else {
-					// TODO
-				}
+			secureFetch(`posts/${this.state.post_id}/${action}`, 'PUT')
+			.then(response => {
+				viewQuery = `user_id=${this.props.user_id}`;
+ 				load_posts();
 			});
 		}
 
 		updatePost = (fields) => {
-			let csrftoken = Cookies.get('csrftoken');
-
-			fetch(`posts/${this.state.post_id}/edit`, {
-				method: 'PUT',
-				body: JSON.stringify(fields),
-				headers: { "X-CSRFToken": csrftoken },
-				credentials: 'same-origin',
-
-			}).then(response => {
-				if (response.status.toString().charAt(0) === '2') {
-					viewQuery = `user_id=${this.props.user_id}`;
-	 				load_posts();
-				} else {
-					// TODO
-				}
+			secureFetch(`posts/${this.state.post_id}/edit`, 'PUT', fields)
+			.then(response => {
+				viewQuery = `user_id=${this.props.user_id}`;
+ 				load_posts();
 			});
 		}
 	}
@@ -274,16 +284,8 @@ function render_profile(user) {
 		}
 
 		actionFollow = async () => {
-			let csrftoken = Cookies.get('csrftoken');
-
-			let status = await fetch(`user/${user.id}`, {
-				method: 'PUT',
-				body: JSON.stringify({
-					follow: (user.followers.indexOf(currentUser.id) >= 0) ? false : true
-				}),
-				headers: { "X-CSRFToken": csrftoken },
-				credentials: 'same-origin',
-
+			secureFetch(`user/${user.id}`, 'PUT', {
+				follow: (user.followers.indexOf(currentUser.id) >= 0) ? false : true
 			}).then(response => {
 				if (response.status.toString().charAt(0) === '2') return response.json();
 				else return { error: response.status };
@@ -311,19 +313,14 @@ function render_profile(user) {
 // ... authenticated user is following
 function load_posts(q='') {
 	let query = q + '&' + viewQuery;
-	console.log(query)
-	fetch(`/posts?${query}`)
+	secureFetch(`/posts?${query}`, 'GET')
 		.then(response => response.json())
 		.then(({posts, page, num_pages, prev, next}) => {
-		ReactDOM.unmountComponentAtNode(document.getElementById('pagination'));
-		// Print posts
-		console.log(posts);
-		// console.log(data.posts)
-		// pagination.page = data.page
-		// pagination.numPages = data.num_pages
-
-		// ... do something else with posts ...
-		renderPagination(page, num_pages, prev, next)
-		renderPosts(posts)
-	});
+			ReactDOM.unmountComponentAtNode(document.getElementById('pagination'));
+			// Print posts
+			console.log(posts);
+			// ... do something else with posts ...
+			renderPagination(page, num_pages, prev, next)
+			renderPosts(posts)
+		})
 }

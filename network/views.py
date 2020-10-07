@@ -13,10 +13,10 @@ from django.urls import reverse
 from .models import User, Post
 
 def index(request):
-	if request.user.is_authenticated:
-		return render(request, "network/index.html")
-	else:
-		return render(request, "network/login.html")
+	# if request.user.is_authenticated:
+	return render(request, "network/index.html")
+	# else:
+		# return render(request, "network/login.html")
 
 # @login_required(login_url='/login')
 def userId(request):
@@ -103,8 +103,11 @@ def profile(request, user_id):
 
 	return JsonResponse(result, safe=False)
 
-@login_required(login_url='/login')
 def like(request, post_id):
+	if not request.user.is_authenticated:
+		print('not')
+		return JsonResponse({"error": "user is not logged in"}, status=401)
+
 	if request.method == "PUT":
 		# Query for post
 		try:
@@ -115,9 +118,9 @@ def like(request, post_id):
 		post.likes.add(request.user)
 		post.save()
 		return HttpResponse(status=204)
-
 	else:
 		return JsonResponse({"error": "Method not allowed!"}, status=405)
+
 
 @login_required(login_url='/login')
 def unlike(request, post_id):
@@ -179,7 +182,10 @@ def login_view(request):
                 "message": "Invalid username and/or password."
             })
     else:
-        return render(request, "network/login.html")
+        print('login')
+        return render(request, "network/login.html", {
+        	"message": "WTF"
+        	})
 
 
 def logout_view(request):
