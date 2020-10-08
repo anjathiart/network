@@ -17,12 +17,14 @@ const secureFetch = (url, method, data) => {
 			body: JSON.stringify(data),
 			headers: { "X-CSRFToken": csrftoken },
 			credentials: 'same-origin',
-		}).then(response => {
-			// response only can be ok in range of 2XX
+		}).then(async response => {
+			// let res  = await response.json();
+			// console.log(res);
+			
 			if (response.ok) {
-				// you can call response.json() here too if you want to return json
 				resolve(response);
 			} else {
+				console.log(response);
 				//handle errors in the way you want to
 				switch (response.status) {
 					case 400:
@@ -44,18 +46,63 @@ const secureFetch = (url, method, data) => {
 						console.log('Some error occured');
 					break;
 				}
+				console.log('hi')
 				//here you also can thorow custom error too
-				reject(response);
+				reject(await response.json());
 			}
 		}).catch(error => {
 			//it will be invoked mostly for network errors
 			//do what ever you want to do with error here
 			console.log(error);
-			reject(error);
+			reject({ error });
 		});
 	});
 }
 
+function render_message(user) {
+	document.querySelector('#profile__component').style.display = 'block';
+	contextHeading = `${user.name}'s posts`
+	class Profile extends React.Component {
+		constructor(props) {
+			super(props);
+			this.state = {
+				allowFollow: user.id !== currentUser.id,
+			};
+		}
+		render() {
+			return (
+				<div className="jumbotron mb-0">
+					<div className="jumbotron__header">
+						<h1 className="display-4 mb-1">{ user.name }</h1>
+						{ this.state.allowFollow
+							? <p className="ml-4"><button className="btn btn-indigo" onClick={ this.actionFollow }>{ user.followers.indexOf(currentUser.id) >= 0 ? 'Unfollow' : 'Follow' }</button></p>
+							: null
+						}
+					</div>
+					<p className="profile__followers badge badge-info badge-pill shadow3">Followed by { user.followers.length } { user.followers.length === 1 ? 'user' : 'users' }</p>
+					<p className="profile__follows badge badge-info badge-pill shadow3">{ user.name } follows { user.followsCount} { user.followsCount === 1 ? 'user' : 'users' }</p> 
+				</div>
+			);
+		}
+
+		actionFollow = async () => {
+			secureFetch(`user/${user.id}`, 'PUT', {
+				follow: (user.followers.indexOf(currentUser.id) >= 0) ? false : true
+			}).then(response => {
+				if (response.status.toString().charAt(0) === '2') return response.json();
+				else return { error: response.status };
+			}).then(async result => {
+				if (!result.error) {
+					await load_current_user()
+					render_profile(result)
+				}
+			})
+			.catch((error) => {
+				console.error('Error', error);
+			});
+		}
+	}
+}
 // // all posts (all) | posts of those the user follows (follows) | posts of a particular user (user)
 // let postDisplayContext = 'all';
 
@@ -232,8 +279,9 @@ function renderPosts(posts) {
 		updatePost = (fields) => {
 			secureFetch(`posts/${this.state.post_id}/edit`, 'PUT', fields)
 			.then(response => {
-				viewQuery = `user_id=${this.props.user_id}`;
- 				load_posts();
+				console.log(response);
+				// viewQuery = `user_id=${this.props.user_id}`;
+ 			// 	load_posts();
 			});
 		}
 	}
@@ -307,13 +355,35 @@ function render_profile(user) {
 }
 
 
+function render_error(msg) {
 
+	class Error extends React.Component {
+		render() {
+			return (
+				<div className="modal">
+					<div className="modal__content">
+						<p>{ msg }</p>
+						<button onClick={ this.close } className="btn btn-primary btn-lg">OK</button>
+					</div>
+				</div>
+			);
+		}
+
+		close = () => {
+			ReactDOM.unmountComponentAtNode(document.getElementById('error__component'));
+		}
+	}
+
+	ReactDOM.render(<Error />, document.querySelector("#error__component"));
+	feather.replace()
+
+}
 // Load posts based on some context, where the default context is all posts
 // ... other options are to load posts of a specific user or all posts for users that the 
 // ... authenticated user is following
 function load_posts(q='') {
 	let query = q + '&' + viewQuery;
-	secureFetch(`/posts?${query}`, 'GET')
+	secureFetch(`/posts?${query}`, 'PUT')
 		.then(response => response.json())
 		.then(({posts, page, num_pages, prev, next}) => {
 			ReactDOM.unmountComponentAtNode(document.getElementById('pagination'));
@@ -322,5 +392,9 @@ function load_posts(q='') {
 			// ... do something else with posts ...
 			renderPagination(page, num_pages, prev, next)
 			renderPosts(posts)
+		})
+		.catch(error => {
+			render_error(error.error);
+			console.log(error)
 		})
 }
