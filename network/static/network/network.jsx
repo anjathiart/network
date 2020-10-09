@@ -88,18 +88,16 @@ function render_message(user) {
 		actionFollow = async () => {
 			secureFetch(`user/${user.id}`, 'PUT', {
 				follow: (user.followers.indexOf(currentUser.id) >= 0) ? false : true
-			}).then(response => {
-				if (response.status.toString().charAt(0) === '2') return response.json();
-				else return { error: response.status };
-			}).then(async result => {
-				if (!result.error) {
-					await load_current_user()
-					render_profile(result)
-				}
 			})
-			.catch((error) => {
-				console.error('Error', error);
-			});
+			.then(response => response.json())
+			.then(async result => {
+				await load_current_user();
+				render_profile(result);
+			})
+			.catch(error => {
+				render_error(error.error);
+				console.log(error);
+			})
 		}
 	}
 }
@@ -137,21 +135,27 @@ async function myInitCode() {
 		});
 		document.querySelector(".newPost__submit").addEventListener('click', () => {
 			secureFetch(`posts`, 'POST', { body: document.querySelector(".newPost__input").value })
-			.then(response => {
-	 			load_posts();
-			});
+			.then(response => { load_posts(); })
+			.catch(error => { render_error(error.error); });
 		});
+		document.querySelector("#profileLink").addEventListener('click', () => {
+			render_profile(currentUser);
+		});
+
 	}
 	load_posts();
 }
 
 async function load_current_user() {
 	await fetch(`/user/current`)
-		.then(async response => await response.json())
-		.then(result => {
-			console.log(result)
-			if (result.id) currentUser = result
-	});
+	.then(async response => await response.json())
+	.then(result => {
+		console.log(result)
+		if (result.id) currentUser = result
+	})
+	.catch(error => {
+		console.log(error);
+	})
 }
 
 function renderPagination(page, num_pages, prev, next) {
@@ -182,7 +186,6 @@ function renderPagination(page, num_pages, prev, next) {
 		}
 
 		actionPagination = (selected_page) => {
-			console.log(selected_page)
 			if (selected_page !== this.state.page) {
 				load_posts(`page=${selected_page}`)
 			}
@@ -248,14 +251,10 @@ function renderPosts(posts) {
 			secureFetch(`/user/${this.props.user_id}`)
 			.then(response => response.json())
 			.then(result => {
-				if (!result.error) {
-					render_profile(result);
-					viewQuery = `user_id=${this.props.user_id}`;
-					load_posts();
-				}
+				render_profile(result);
 			})
 			.catch((error) => {
-				console.error('Error', error);
+				render_error(error.error);
 			});
 		}
 
@@ -273,15 +272,19 @@ function renderPosts(posts) {
 			.then(response => {
 				viewQuery = `user_id=${this.props.user_id}`;
  				load_posts();
+			})
+			.catch((error) => {
+				render_error(error.error);
 			});
 		}
 
 		updatePost = (fields) => {
 			secureFetch(`posts/${this.state.post_id}/edit`, 'PUT', fields)
 			.then(response => {
-				console.log(response);
-				// viewQuery = `user_id=${this.props.user_id}`;
- 			// 	load_posts();
+				load_posts();
+			})
+			.catch((error) => {
+				render_error(error.error);
 			});
 		}
 	}
@@ -325,8 +328,8 @@ function render_profile(user) {
 							: null
 						}
 					</div>
-					<p className="profile__followers badge badge-info badge-pill shadow3">Followed by { user.followers.length } { user.followers.length === 1 ? 'user' : 'users' }</p>
-					<p className="profile__follows badge badge-info badge-pill shadow3">{ user.name } follows { user.followsCount} { user.followsCount === 1 ? 'user' : 'users' }</p> 
+					<p className="profile__followers badge badge-info badge-pill bgSecondary shadow3">Followed by { user.followers.length } { user.followers.length === 1 ? 'user' : 'users' }</p>
+					<p className="profile__follows badge badge-info badge-pill bgSecondary shadow3">{ user.name } follows { user.followsCount} { user.followsCount === 1 ? 'user' : 'users' }</p> 
 				</div>
 			);
 		}
@@ -334,21 +337,20 @@ function render_profile(user) {
 		actionFollow = async () => {
 			secureFetch(`user/${user.id}`, 'PUT', {
 				follow: (user.followers.indexOf(currentUser.id) >= 0) ? false : true
-			}).then(response => {
-				if (response.status.toString().charAt(0) === '2') return response.json();
-				else return { error: response.status };
-			}).then(async result => {
-				if (!result.error) {
-					await load_current_user()
-					render_profile(result)
-				}
+			})
+			.then(response => response.json())
+			.then(async result => {
+				await load_current_user();
+				render_profile(result);
 			})
 			.catch((error) => {
-				console.error('Error', error);
+				render_error(error.error);
 			});
 		}
 	}
 
+	viewQuery = `user_id=${user.id}`;
+	load_posts();
 	ReactDOM.render(<Profile />, document.querySelector("#profile__component"));
 	feather.replace()
 
@@ -356,7 +358,6 @@ function render_profile(user) {
 
 
 function render_error(msg) {
-
 	class Error extends React.Component {
 		render() {
 			return (
@@ -368,33 +369,24 @@ function render_error(msg) {
 				</div>
 			);
 		}
-
 		close = () => {
 			ReactDOM.unmountComponentAtNode(document.getElementById('error__component'));
 		}
 	}
-
 	ReactDOM.render(<Error />, document.querySelector("#error__component"));
 	feather.replace()
-
 }
 // Load posts based on some context, where the default context is all posts
 // ... other options are to load posts of a specific user or all posts for users that the 
 // ... authenticated user is following
 function load_posts(q='') {
 	let query = q + '&' + viewQuery;
-	secureFetch(`/posts?${query}`, 'PUT')
-		.then(response => response.json())
-		.then(({posts, page, num_pages, prev, next}) => {
-			ReactDOM.unmountComponentAtNode(document.getElementById('pagination'));
-			// Print posts
-			console.log(posts);
-			// ... do something else with posts ...
-			renderPagination(page, num_pages, prev, next)
-			renderPosts(posts)
-		})
-		.catch(error => {
-			render_error(error.error);
-			console.log(error)
-		})
+	secureFetch(`/posts?${query}`, 'GET')
+	.then(response => response.json())
+	.then(({posts, page, num_pages, prev, next}) => {
+		ReactDOM.unmountComponentAtNode(document.getElementById('pagination'));
+		renderPagination(page, num_pages, prev, next);
+		renderPosts(posts);
+	})
+	.catch(error => { render_error(error.error); });
 }
