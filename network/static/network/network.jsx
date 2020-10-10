@@ -1,15 +1,9 @@
 let currentUser = null;
-let currentProfileUser = null;
-let contextHeading = '';
-let pagination = {
-	page: 1,
-	limit: 10,
-	numPages: 1,
-}
+let contextHeading = 'All Posts';
 let viewQuery = '';
-let csrftoken = '';
+let csrftoken = Cookies.get('csrftoken');
 
-// taken and adapted from https://stackoverflow.com/questions/51297206/fetch-api-global-error-handler answer
+// generic wrapper function for fetch requests
 const secureFetch = (url, method, data) => {
 	return new Promise((resolve, reject) => {
 		fetch(url, {
@@ -18,93 +12,28 @@ const secureFetch = (url, method, data) => {
 			headers: { "X-CSRFToken": csrftoken },
 			credentials: 'same-origin',
 		}).then(async response => {
-			// let res  = await response.json();
-			// console.log(res);
-			
 			if (response.ok) {
+				// All 200 errors will have response === ok
+				ReactDOM.unmountComponentAtNode(document.getElementById('error__component'));
 				resolve(response);
+				return;
+			} else if (response.status === 401) {
+				// All 401's redirect user to login
+				window.location.replace('/login');
+				return;
 			} else {
-				console.log(response);
-				//handle errors in the way you want to
-				switch (response.status) {
-					case 400:
-						console.log('400')
-						break;
-					case 401:
-						window.location.replace('/login');
-						break;
-					case 403:
-						console.log('403');
-						break;
-					case 404:
-						console.log('Object not found');
-						break;
-					case 500:
-						console.log('Internal server error');
-						break;
-					default:
-						console.log('Some error occured');
-					break;
-				}
-				console.log('hi')
-				//here you also can thorow custom error too
+				// Deal with other errors from the server / api
 				reject(await response.json());
+				return;
 			}
 		}).catch(error => {
-			//it will be invoked mostly for network errors
-			//do what ever you want to do with error here
-			console.log(error);
+			// deal with network errors
 			reject({ error });
 		});
 	});
-}
+} 
 
-function render_message(user) {
-	document.querySelector('#profile__component').style.display = 'block';
-	contextHeading = `${user.name}'s posts`
-	class Profile extends React.Component {
-		constructor(props) {
-			super(props);
-			this.state = {
-				allowFollow: user.id !== currentUser.id,
-			};
-		}
-		render() {
-			return (
-				<div className="jumbotron mb-0">
-					<div className="jumbotron__header">
-						<h1 className="display-4 mb-1">{ user.name }</h1>
-						{ this.state.allowFollow
-							? <p className="ml-4"><button className="btn btn-indigo" onClick={ this.actionFollow }>{ user.followers.indexOf(currentUser.id) >= 0 ? 'Unfollow' : 'Follow' }</button></p>
-							: null
-						}
-					</div>
-					<p className="profile__followers badge badge-info badge-pill shadow3">Followed by { user.followers.length } { user.followers.length === 1 ? 'user' : 'users' }</p>
-					<p className="profile__follows badge badge-info badge-pill shadow3">{ user.name } follows { user.followsCount} { user.followsCount === 1 ? 'user' : 'users' }</p> 
-				</div>
-			);
-		}
-
-		actionFollow = async () => {
-			secureFetch(`user/${user.id}`, 'PUT', {
-				follow: (user.followers.indexOf(currentUser.id) >= 0) ? false : true
-			})
-			.then(response => response.json())
-			.then(async result => {
-				await load_current_user();
-				render_profile(result);
-			})
-			.catch(error => {
-				render_error(error.error);
-				console.log(error);
-			})
-		}
-	}
-}
-// // all posts (all) | posts of those the user follows (follows) | posts of a particular user (user)
-// let postDisplayContext = 'all';
-
-
+// initialise the page
 if( document.readyState !== 'loading' ) {
     console.log( 'document is already ready, just execute code here' );
     myInitCode();
@@ -115,14 +44,13 @@ if( document.readyState !== 'loading' ) {
     });
 }
 
-
+// All code that needs to load once the DOM is ready
 async function myInitCode() {
 	feather.replace();
 
 	// load user
 	await load_current_user();
-	console.log(currentUser);
-	csrftoken = Cookies.get('csrftoken')
+
 	// Handle routing to the following page
 	if (currentUser) {
 		document.querySelector('#nav__following').addEventListener('click', async () => {
@@ -150,8 +78,7 @@ async function load_current_user() {
 	await fetch(`/user/current`)
 	.then(async response => await response.json())
 	.then(result => {
-		console.log(result)
-		if (result.id) currentUser = result
+		if (result.id) currentUser = result;
 	})
 	.catch(error => {
 		console.log(error);
@@ -212,7 +139,7 @@ function renderPosts(posts) {
 		render() {
 			return (
 				<div id={ "post" + this.props.id } className="post shadow1">
-					<h4 onClick={ this.actionUser.bind(this, this.props.index) } className="post__header">
+					<h4 onClick={ this.actionUser } className="post__header">
 						{ this.props.name }
 					</h4>
 					<footer className="blockquote-footer post__subHeader text-small mb-2 mt-1"><cite title="Source Title">{ this.props.date }</cite></footer>
@@ -247,7 +174,8 @@ function renderPosts(posts) {
 			);
 		}
 
-		actionUser = (post_index) => {
+		// 
+		actionUser = () => {
 			secureFetch(`/user/${this.props.user_id}`)
 			.then(response => response.json())
 			.then(result => {
@@ -256,17 +184,27 @@ function renderPosts(posts) {
 			.catch((error) => {
 				render_error(error.error);
 			});
-		}
+		};
 
-		actionEdit = () => { this.setState(state => ({ editing: true })); }
-
+		// Deal with editing of posts
+		actionEdit = () => { this.setState(state => ({ editing: true })); };
 		cancelEdit = () => {
 			this.setState(state => ({ 
 				editing: false,
 				modified_post_body: this.state.post_body
 			}));
-		}
+		};
+		updatePost = (fields) => {
+			secureFetch(`posts/${this.state.post_id}/edit`, 'PUT', fields)
+			.then(response => {
+				load_posts();
+			})
+			.catch((error) => {
+				render_error(error.error);
+			});
+		};
 
+		// like / unlike a post
 		actionUpdateLike = (action) => {
 			secureFetch(`posts/${this.state.post_id}/${action}`, 'PUT')
 			.then(response => {
@@ -276,17 +214,7 @@ function renderPosts(posts) {
 			.catch((error) => {
 				render_error(error.error);
 			});
-		}
-
-		updatePost = (fields) => {
-			secureFetch(`posts/${this.state.post_id}/edit`, 'PUT', fields)
-			.then(response => {
-				load_posts();
-			})
-			.catch((error) => {
-				render_error(error.error);
-			});
-		}
+		};	
 	}
 
 	// Build the list of posts card components for the mailbox content
@@ -334,18 +262,14 @@ function render_profile(user) {
 			);
 		}
 
+		// follow / unfollow user
 		actionFollow = async () => {
 			secureFetch(`user/${user.id}`, 'PUT', {
 				follow: (user.followers.indexOf(currentUser.id) >= 0) ? false : true
 			})
 			.then(response => response.json())
-			.then(async result => {
-				await load_current_user();
-				render_profile(result);
-			})
-			.catch((error) => {
-				render_error(error.error);
-			});
+			.then(async result => { render_profile(result); })
+			.catch((error) => { render_error(error.error); });
 		}
 	}
 
@@ -353,10 +277,9 @@ function render_profile(user) {
 	load_posts();
 	ReactDOM.render(<Profile />, document.querySelector("#profile__component"));
 	feather.replace()
-
 }
 
-
+// Show an error modal with the error message and a 'OK' button
 function render_error(msg) {
 	class Error extends React.Component {
 		render() {
@@ -376,7 +299,8 @@ function render_error(msg) {
 	ReactDOM.render(<Error />, document.querySelector("#error__component"));
 	feather.replace()
 }
-// Load posts based on some context, where the default context is all posts
+
+// Load posts based on some query, where the default query is all posts
 // ... other options are to load posts of a specific user or all posts for users that the 
 // ... authenticated user is following
 function load_posts(q='') {
@@ -384,7 +308,7 @@ function load_posts(q='') {
 	secureFetch(`/posts?${query}`, 'GET')
 	.then(response => response.json())
 	.then(({posts, page, num_pages, prev, next}) => {
-		ReactDOM.unmountComponentAtNode(document.getElementById('pagination'));
+		if (posts.length === 0) contextHeading = "No Posts";
 		renderPagination(page, num_pages, prev, next);
 		renderPosts(posts);
 	})
