@@ -14,7 +14,7 @@ def index(request):
 	return render(request, "network/index.html")
 
 # Returns information for the current logged in user
-def userId(request):
+def current_user(request):
 	if request.user.is_authenticated:
 		follows = User.objects.filter(followers__id=request.user.id).count()
 		result = request.user.serialize()
@@ -25,7 +25,7 @@ def userId(request):
 
 # return all posts based on the query parameters
 def posts(request):
-	
+	print('a')
 	if request.method == "GET":
 		page = request.GET.get('page', 1)
 		if request.GET.get('user_id') is not None:
@@ -49,6 +49,7 @@ def posts(request):
 		return JsonResponse(data, safe=False)
 
 	elif request.method == "POST":
+		print('b')
 		if not request.user.is_authenticated:
 			return JsonResponse({"error": "user is not logged in"}, status=401)
 		
@@ -65,8 +66,8 @@ def posts(request):
 	else:
 		return JsonResponse({"error": "Method not allowed!"}, status=405)
 
-
-def profile(request, user_id):
+# view to get a users profile information or to follow / unfollow a user
+def user(request, user_id):
 	if not request.user.is_authenticated:
 		return JsonResponse({"error": "user is not logged in"}, status=401)
 	
@@ -78,17 +79,19 @@ def profile(request, user_id):
 			return JsonResponse({"error": "User not found."}, status=404)
 
 		if request.method == "PUT":
-			data = json.loads(request.body)
-			if data.get("follow") is not None:
-				current_user = User.objects.get(id=request.user.id)
-				if data["follow"] == False:
-					user.followers.remove(current_user)
-				if data["follow"] == True:
-					user.followers.add(current_user)
-				user.save();
+			if request.user.id != user_id:
+				data = json.loads(request.body)
+				if data.get("follow") is not None:
+					current_user = User.objects.get(id=request.user.id)
+					if data["follow"] == False:
+						user.followers.remove(current_user)
+					if data["follow"] == True:
+						user.followers.add(current_user)
+					user.save();
+				else:
+					return JsonResponse({"error": "Missing 'follow' body field"}, status=400)
 			else:
-				return JsonResponse({"error": "Missing 'follow' body field"}, status=400)
-
+				return JsonResponse({"error": "A user cannot follow him/herself"}, status=403)
 		result = user.serialize()		
 		result['followsCount'] = User.objects.filter(followers__id=user_id).count()
 		return JsonResponse(result, safe=False)
