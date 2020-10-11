@@ -63,7 +63,10 @@ async function myInitCode() {
 		});
 		document.querySelector(".newPost__submit").addEventListener('click', () => {
 			secureFetch(`posts`, 'POST', { body: document.querySelector(".newPost__input").value })
-			.then(response => { load_posts(); })
+			.then(response => {
+				document.querySelector(".newPost__input"). value = "";
+				load_posts();
+			})
 			.catch(error => { render_error(error.error); });
 		});
 		document.querySelector("#profileLink").addEventListener('click', () => {

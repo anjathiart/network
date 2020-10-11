@@ -25,7 +25,6 @@ def current_user(request):
 
 # return all posts based on the query parameters
 def posts(request):
-	print('a')
 	if request.method == "GET":
 		page = request.GET.get('page', 1)
 		if request.GET.get('user_id') is not None:
@@ -49,7 +48,6 @@ def posts(request):
 		return JsonResponse(data, safe=False)
 
 	elif request.method == "POST":
-		print('b')
 		if not request.user.is_authenticated:
 			return JsonResponse({"error": "user is not logged in"}, status=401)
 		
