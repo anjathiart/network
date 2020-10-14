@@ -1,5 +1,5 @@
 # network
-A Twitter-like social network website for making posts and following users.
+A Twitter-like social network website for making posts and following users. Check out a demo video here: https://youtu.be/P_QSEHIOCck
 
 ## Technologies
 
