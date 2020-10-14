@@ -177,7 +177,7 @@ function renderPosts(posts) {
 			);
 		}
 
-		// 
+		// Go to a users profile
 		actionUser = () => {
 			secureFetch(`/user/${this.props.user_id}`)
 			.then(response => response.json())

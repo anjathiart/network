@@ -27,7 +27,7 @@ And in `network/static/network`:
 `sass --watch styles.sass styles.css`
 
 ## Tests
-
+`python3 manage.py test`
 
 
 
