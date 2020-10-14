@@ -3,7 +3,7 @@ A Twitter-like social network website for making posts and following users.
 
 ## Technologies
 
-### Backend
+### Backend / API
 - Python
 - Django
 - Django models and migrations
@@ -27,6 +27,7 @@ And in `network/static/network`:
 `sass --watch styles.sass styles.css`
 
 ## Tests
+Unit tests can be run with:
 `python3 manage.py test`
 
 
